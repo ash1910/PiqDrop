@@ -31,7 +31,7 @@ export default function WelcomeScreen() {
       <ThemedView style={styles.buttonBackgroundContainer}>
         <TouchableOpacity 
           style={styles.buttonContainer}
-          onPress={() => router.replace('/(tabs)')}
+          onPress={() => router.replace('login')}
         >
           <Text style={styles.buttonText}>Get started</Text>
           <Svg width="20" height="20" viewBox="0 0 20 20" fill="none"> 

@@ -1,0 +1,25 @@
+{
+    "cli": {
+      "version": ">= 16.3.2"
+    },
+    "build": {
+      "development": {
+        "developmentClient": true,
+        "distribution": "internal"
+      },
+      "preview": {
+        "ios": {
+          "simulator": true
+        },
+        "android": {
+          "buildType": "apk"
+        }
+      },
+      "production": {
+        "env": {
+          "ANDROID_SDK_ROOT": "/Volumes/ExAsh/Library/Android/sdk"
+        }
+      }
+    }
+  }
+  

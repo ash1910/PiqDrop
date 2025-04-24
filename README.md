@@ -16,6 +16,12 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
     npx expo start
    ```
 
+3. IOS Build Preview for Simulator: eas build -p ios --profile preview
+
+4. Android Build Preview for Simulator: eas build -p android --profile preview
+
+5. Run Emulator manually: /Volumes/ExAsh/Library/Android/sdk/emulator/emulator -read-only @Resizable_Experimental_API_UpsideDownCake
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
