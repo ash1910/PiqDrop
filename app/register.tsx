@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -11,12 +11,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LetterIcon } from '@/components/icons/LetterIcon';
 import { LockIcon } from '@/components/icons/LockIcon';
-import { PhoneIcon } from '@/components/icons/PhoneIcon';
-import { FacebookIcon } from '@/components/icons/FacebookIcon';
-import { GoogleIcon } from '@/components/icons/GoogleIcon';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
-import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 import { Picker } from '@react-native-picker/picker';
+import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
+import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 
 const HEADER_HEIGHT = 207;
 
@@ -33,13 +31,56 @@ const COLORS = {
   google: '#DB4437',
 };
 
+const COUNTRIES = [
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Australia',
+  'Germany',
+  'France',
+  'Sweden',
+  'Japan',
+  'China',
+  'India'
+];
+
+const GENDERS = [
+  'Male',
+  'Female',
+  'Other'
+];
+
 export default function LoginScreen() {
   const [rememberMe, setRememberMe] = React.useState(true);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [nationality, setNationality] = React.useState('');
+  const [gender, setGender] = React.useState('');
+  const [showPicker, setShowPicker] = React.useState(false);
+  const [pickerType, setPickerType] = React.useState<'nationality' | 'gender'>('nationality');
+  const [isKeyboardVisible, setKeyboardVisible] = React.useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+
+  React.useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -66,12 +107,47 @@ export default function LoginScreen() {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  const openPicker = (type: 'nationality' | 'gender') => {
+    setPickerType(type);
+    setShowPicker(true);
+  };
+
+  const handlePickerChange = (value: string) => {
+    if (pickerType === 'nationality') {
+      setNationality(value);
+    } else {
+      setGender(value);
+    }
+  };
+
+  const getPickerTitle = () => {
+    return pickerType === 'nationality' ? 'Nationality' : 'Gender';
+  };
+
+  const getPickerItems = () => {
+    const items = pickerType === 'nationality' ? COUNTRIES : GENDERS;
+    return [
+      { label: pickerType === 'nationality' ? 'Nationality' : 'Gender', value: '' },
+      ...items.map(item => ({ label: item, value: item }))
+    ];
+  };
+
+  const getSelectedValue = () => {
+    return pickerType === 'nationality' ? nationality : gender;
+  };
+
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
@@ -134,34 +210,72 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.label}>Nationality</Text>
-          <View style={styles.inputContainer}>
-            <Picker
-              selectedValue={nationality}
-              onValueChange={(itemValue) => setNationality(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Nationality" value="" />
-              <Picker.Item label="United States" value="US" />
-              <Picker.Item label="United Kingdom" value="UK" />
-              <Picker.Item label="Canada" value="CA" />
-              <Picker.Item label="Australia" value="AU" />
-              <Picker.Item label="Germany" value="DE" />
-              <Picker.Item label="France" value="FR" />
-              <Picker.Item label="Japan" value="JP" />
-              <Picker.Item label="China" value="CN" />
-              <Picker.Item label="India" value="IN" />
-            </Picker>
-          </View>
+          <TouchableOpacity 
+            style={styles.inputContainer}
+            onPress={() => openPicker('nationality')}
+          >
+            <Text style={[styles.input, !nationality && { color: '#999' }]}>
+              {nationality || 'Nationality'}
+            </Text>
+            <SelectArrowIcon size={20} color={COLORS.text} />
+          </TouchableOpacity>
 
+          <Text style={styles.label}>Gender</Text>
+          <TouchableOpacity 
+            style={styles.inputContainer}
+            onPress={() => openPicker('gender')}
+          >
+            <Text style={[styles.input, !gender && { color: '#999' }]}>
+              {gender || 'Gender'}
+            </Text>
+            <SelectArrowIcon size={20} color={COLORS.text} />
+          </TouchableOpacity>
+
+          <Modal
+            visible={showPicker}
+            transparent={true}
+            animationType="slide"
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity onPress={() => setShowPicker(false)}>
+                    <Text style={styles.cancelButton}>Cancel</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>{getPickerTitle()}</Text>
+                  <TouchableOpacity onPress={() => setShowPicker(false)}>
+                    <Text style={styles.doneButton}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <Picker
+                  selectedValue={getSelectedValue()}
+                  onValueChange={handlePickerChange}
+                  style={styles.modalPicker}
+                >
+                  {getPickerItems().map((item) => (
+                    <Picker.Item key={item.label} label={item.label} value={item.value} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+          </Modal>
+        </View>
+        {isKeyboardVisible && (
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.loginButton}>
+            <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/otpVerification')}>
               <Text style={styles.loginText}>Sign up</Text>
             </TouchableOpacity>
           </View>
-
-        </View>
+        )}
       </Animated.ScrollView>
-    </View>
+      {!isKeyboardVisible && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/otpVerification')}>
+            <Text style={styles.loginText}>Sign up</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
@@ -173,6 +287,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 0,
+    paddingBottom: 86,
   },
   header: {
     paddingTop: 47,
@@ -204,7 +319,7 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     paddingTop: 6,
-    paddingBottom: 22,
+    paddingBottom: 46,
     paddingHorizontal: 16,
     backgroundColor: COLORS.backgroundWrapper,
   },
@@ -285,6 +400,49 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   buttonContainer: {
-    marginTop: 24,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 22,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.inputBorder,
+  },
+  cancelButton: {
+    color: COLORS.subtitle,
+    fontSize: 16,
+    fontFamily: 'nunito-medium',
+  },
+  doneButton: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+  },
+  modalPicker: {
+    width: '100%',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+    color: COLORS.text,
   },
 });
