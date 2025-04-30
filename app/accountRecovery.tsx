@@ -20,7 +20,7 @@ const COLORS = {
   iconBackground: '#F0F0F0',
 };
 
-export default function SuccessScreen() {
+export default function AccountRecoveryScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -64,18 +64,18 @@ export default function SuccessScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} color={"#212121"} />
           </TouchableOpacity>
-          <Image source={require('@/assets/img/congratulation-bg.png')} style={styles.logo} />
-          <Text style={styles.appName}>Congratulations!</Text>
-          <Text style={styles.tagline}>Registeration is successful.</Text>
+          <Image source={require('@/assets/img/recovery-bg.png')} style={styles.logo} />
+          <Text style={styles.appName}>Account recovery</Text>
+          <Text style={styles.tagline}>Change your phone number or lost access to your Facebook account ? we can help you log in with your email.</Text>
         </Animated.View>
         <View style={styles.form}></View>
         {isKeyboardVisible && (
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.continueButton}
-              onPress={() => router.push('/uploadFile')}
+              onPress={() => router.push('/login')}
             >
-              <Text style={styles.continueButtonText}>Tap to continue</Text>
+              <Text style={styles.continueButtonText}>Log in with email</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -85,9 +85,9 @@ export default function SuccessScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.push('/uploadFile')}
+            onPress={() => router.push('/login')}
           >
-            <Text style={styles.continueButtonText}>Tap to continue</Text>
+            <Text style={styles.continueButtonText}>Log in with email</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   leftArrow: {
     width: 44,
     height: 44,
-    marginBottom: 37,
+    marginBottom: 52,
   },
   appName: {
     fontSize: 28,
@@ -122,14 +122,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     letterSpacing: 0.2,
     marginBottom: 12,
-    textAlign: 'center',
   },
   tagline: {
     color: COLORS.subtitle,
     fontFamily: 'nunito-medium',
     fontSize: 16,
     letterSpacing: 0.2,
-    textAlign: 'center',
+    lineHeight: 20,
   },
   logo: {
     width: 280,

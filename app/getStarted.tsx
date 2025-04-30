@@ -1,14 +1,18 @@
-import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity, StatusBar } from 'react-native';
 import ParallaxScrollViewNormal from '@/components/ParallaxScrollViewNormal';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { router } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-
+import React, { useEffect } from 'react'; 
 const { width, height } = Dimensions.get('window');
 const HEADER_DELIVERY_HEIGHT = height / 100 * 25;
 
 export default function WelcomeScreen() {
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content');
+  }, []);
+
   return (
     <ParallaxScrollViewNormal
       headerBackgroundColor={{ light: '#55B086', dark: '#4CAF8C' }}
@@ -24,14 +28,14 @@ export default function WelcomeScreen() {
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="default" style={styles.stepText}> 
-          Stay updated and manage your {'\n'}delivery seamlessly from pickup to {'\n'}deliver.
+          Stay updated and manage your {'\n'}delivery seamlessly from pickup to {'\n'}delivery.
         </ThemedText>
       </ThemedView>
 
       <ThemedView style={styles.buttonBackgroundContainer}>
         <TouchableOpacity 
           style={styles.buttonContainer}
-          onPress={() => router.replace('login')}
+          onPress={() => router.replace('/login')}
         >
           <Text style={styles.buttonText}>Get started</Text>
           <Svg width="20" height="20" viewBox="0 0 20 20" fill="none"> 

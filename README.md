@@ -22,6 +22,8 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 5. Run Emulator manually: /Volumes/ExAsh/Library/Android/sdk/emulator/emulator -read-only @Resizable_Experimental_API_UpsideDownCake
 
+6. To create only the ios folder: npx expo prebuild --platform ios
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

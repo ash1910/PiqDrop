@@ -1,14 +1,19 @@
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, StatusBar } from 'react-native';
 import ParallaxScrollViewNormal from '@/components/ParallaxScrollViewNormal';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_DELIVERY_HEIGHT = height / 100 * 22;
 
 export default function WelcomeScreen() {
+
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content');
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace('/getStarted');

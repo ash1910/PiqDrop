@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -30,6 +30,10 @@ export default function OTPVerificationScreen() {
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+
+  useEffect(() => {
+    StatusBar.setBarStyle('dark-content');
+  }, []);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(

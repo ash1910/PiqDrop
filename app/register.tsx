@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -61,6 +61,10 @@ export default function LoginScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = React.useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+
+  React.useEffect(() => {
+    StatusBar.setBarStyle('light-content');
+  }, []);
 
   React.useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(

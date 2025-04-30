@@ -8,6 +8,7 @@ import Animated, {
   useScrollViewOffset,
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
+import { LetterIcon } from '@/components/icons/LetterIcon';
 
 const COLORS = {
   primary: '#55B086',
@@ -20,13 +21,13 @@ const COLORS = {
   iconBackground: '#F0F0F0',
 };
 
-export default function SuccessScreen() {
+export default function ForgotPasswordScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
 
-  useEffect(() => {
-    StatusBar.setBarStyle('dark-content');
+  React.useEffect(() => {
+    StatusBar.setBarStyle('dark-content'); 
   }, []);
 
   useEffect(() => {
@@ -64,18 +65,23 @@ export default function SuccessScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} color={"#212121"} />
           </TouchableOpacity>
-          <Image source={require('@/assets/img/congratulation-bg.png')} style={styles.logo} />
-          <Text style={styles.appName}>Congratulations!</Text>
-          <Text style={styles.tagline}>Registeration is successful.</Text>
+          <Text style={styles.appName}>Lets get you back in </Text>
         </Animated.View>
-        <View style={styles.form}></View>
+        <View style={styles.form}>
+          <Text style={styles.label}>Email</Text> 
+          <View style={styles.inputContainer}> 
+            <LetterIcon size={20} color={COLORS.text} />
+            <TextInput placeholder="Enter Email" style={styles.input} keyboardType="email-address" /> 
+          </View>
+          <Text style={styles.labelSubtitle}>Enter the email associated with your account.{'\n'}we'll send you a link  to help you log back in.</Text>
+        </View>
         {isKeyboardVisible && (
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.continueButton}
-              onPress={() => router.push('/uploadFile')}
+              onPress={() => router.push('/otpVerification')}
             >
-              <Text style={styles.continueButtonText}>Tap to continue</Text>
+              <Text style={styles.continueButtonText}>Send OTP</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -85,9 +91,9 @@ export default function SuccessScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.push('/uploadFile')}
+            onPress={() => router.push('/otpVerification')}
           >
-            <Text style={styles.continueButtonText}>Tap to continue</Text>
+            <Text style={styles.continueButtonText}>Send OTP</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -107,7 +113,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 52,
-    paddingBottom: 24,
+    paddingBottom: 16,
     paddingHorizontal: 16,
     backgroundColor: COLORS.backgroundWrapper,
   },
@@ -121,8 +127,7 @@ const styles = StyleSheet.create({
     fontFamily: 'nunito-extrabold',
     color: COLORS.text,
     letterSpacing: 0.2,
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 0,
   },
   tagline: {
     color: COLORS.subtitle,
@@ -167,5 +172,33 @@ const styles = StyleSheet.create({
     fontFamily: 'nunito-bold',
     fontSize: 16,
     letterSpacing: 0.2,
+  },
+  label: {
+    marginTop: 18,
+    fontFamily: 'nunito-bold',
+    fontSize: 14,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.background,
+    borderRadius: 14,
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 14,
+    height: 54,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 10,
+    fontFamily: 'nunito-medium',
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  labelSubtitle: {
+    fontSize: 14,
+    fontFamily: 'nunito-regular',
+    color: COLORS.subtitle,
+    marginBottom: 16,
+    marginTop: 16,
   },
 });

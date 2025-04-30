@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
@@ -35,6 +35,10 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = React.useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content');
+  }, []);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -103,12 +107,12 @@ export default function LoginScreen() {
               color={COLORS.text}
             />
             <Text style={styles.rememberText}>Remember me</Text>
-            <TouchableOpacity style={styles.forgotLink}>
+            <TouchableOpacity style={styles.forgotLink} onPress={() => router.push('/forgotPassword')}>
               <Text style={styles.forgotText}>Forgot password?</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.loginButton}>
+          <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/(tabs)')}>
             <Text style={styles.loginText}>Login</Text>
           </TouchableOpacity>
 
@@ -122,7 +126,7 @@ export default function LoginScreen() {
             <TouchableOpacity style={styles.socialIcon}>
               <PhoneIcon size={24} color={COLORS.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon}>
+            <TouchableOpacity style={styles.socialIcon} onPress={() => router.push('/accountRecovery')}>
               <FacebookIcon size={32} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialIcon}>
