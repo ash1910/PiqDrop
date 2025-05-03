@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar,KeyboardAvoidingView, Platform, Modal, FlatList } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
@@ -9,13 +9,12 @@ import Animated, {
   useAnimatedStyle,
   useScrollViewOffset,
 } from 'react-native-reanimated';
-import { LetterIcon } from '@/components/icons/LetterIcon';
-import { LockIcon } from '@/components/icons/LockIcon';
-import { PhoneIcon } from '@/components/icons/PhoneIcon';
-import { FacebookIcon } from '@/components/icons/FacebookIcon';
-import { GoogleIcon } from '@/components/icons/GoogleIcon';
 import { BellIcon } from '@/components/icons/BellIcon';
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
+import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
+import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
+import { WeightIcon } from '@/components/icons/WeightIcon';
+import { MoneyIcon } from '@/components/icons/MoneyIcon';
 const HEADER_HEIGHT = 230;
 
 const COLORS = {
@@ -32,10 +31,24 @@ const COLORS = {
 };
 
 export default function LoginScreen() {
-  const [rememberMe, setRememberMe] = React.useState(true);
   const [showPassword, setShowPassword] = React.useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+  
+  const [modalVisible, setModalVisible] = useState(false);
+  const [countryCode, setCountryCode] = useState('DE');
+  const [callingCode, setCallingCode] = useState('49');
+  const [country, setCountry] = useState<Country | null>(null);
+  const [withCallingCode, setWithCallingCode] = useState(true);
+  const [phone, setPhone] = useState('435436567');
+  const [name, setName] = useState('John Doe');
+  const [weight, setWeight] = useState('');
+  const [price, setPrice] = useState('');
+  const onSelect = (country: Country) => {
+    setCountryCode(country.cca2);
+    setCallingCode(country.callingCode[0]);
+    setCountry(country);
+  };
 
   React.useEffect(() => {
     StatusBar.setBarStyle('light-content');
@@ -63,7 +76,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
@@ -96,17 +112,55 @@ export default function LoginScreen() {
           <Text style={styles.label}>Name</Text>
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Name" value="John Doe" style={styles.input} />
+            <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
           </View>
 
-
+          <Text style={styles.label}>Number</Text>
+          <View style={styles.inputContainer}>
+            <CountryPicker
+              countryCode={countryCode}
+              withFilter
+              withFlag
+              withCallingCode
+              withAlphaFilter
+              withCallingCodeButton
+              withModal
+              visible={modalVisible}
+              onSelect={onSelect}
+            />
+            <SelectDownArrowIcon size={16} color={COLORS.text} /> 
+            <TextInput
+              style={styles.input}
+              placeholder="Phone number"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+          </View>
+        
+          <View style={styles.rowContainer}>
+            <View style={styles.rowItem}>
+              <Text style={styles.label}>Weight</Text>
+              <View style={styles.inputContainer}>
+                <WeightIcon size={20} color={COLORS.text} /> 
+                <TextInput placeholder="Weight" value={weight} onChangeText={setWeight} style={styles.input} keyboardType="numeric" />
+              </View>
+            </View>
+            <View style={styles.rowItem}>
+              <Text style={styles.label}>Price</Text>
+              <View style={styles.inputContainer}>
+                <MoneyIcon size={20} color={COLORS.text} />
+                <TextInput placeholder="Price" value={price} onChangeText={setPrice} style={styles.input} keyboardType="numeric" />
+              </View>
+            </View>
+          </View>
 
           <TouchableOpacity style={[styles.loginButton, {marginTop: 35, marginBottom: 27}]} onPress={() => router.push('/(tabs)')}>
             <Text style={styles.loginText}>Post job</Text>
           </TouchableOpacity>
         </View>
       </Animated.ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -199,6 +253,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     marginBottom: 0,
   },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 18,
+  },
+  rowItem: {
+    flex: 1,
+  },
   label: {
     marginTop: 18,
     fontFamily: 'nunito-bold',
@@ -208,7 +271,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.background,
     borderRadius: 14,
-    padding: 15,
+    paddingHorizontal: 15,
     alignItems: 'center',
     marginTop: 14,
     height: 54,
@@ -234,6 +297,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.2,
   },
-
-
 });
