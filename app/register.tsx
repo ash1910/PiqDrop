@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.background,
     borderRadius: 14,
-    padding: 15,
+    paddingHorizontal: 15,
     alignItems: 'center',
     marginTop: 14,
     height: 54,
@@ -359,6 +359,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontFamily: 'nunito-medium',
     fontSize: 16,
+    paddingVertical: 15,
     color: COLORS.text,
   },
   row: {
