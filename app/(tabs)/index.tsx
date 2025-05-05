@@ -58,16 +58,27 @@ export default function HomeScreen() {
   const [weight, setWeight] = useState('');
   const [price, setPrice] = useState('');
   const [location, setLocation] = useState('');
+  const [locationDropOff, setLocationDropOff] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalDropOffVisible, setModalDropOffVisible] = useState(false);
   const [marker, setMarker] = useState(null);
+  const [markerDropOff, setMarkerDropOff] = useState(null);
   const [region, setRegion] = useState(null);
+  const [regionDropOff, setRegionDropOff] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState('map');
   const [details, setDetails] = useState('');
+  const [detailsDropOff, setDetailsDropOff] = useState('');
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
   const [showDateModal, setShowDateModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
+
+  const [nameDropOff, setNameDropOff] = useState('Gregory Smith');
+  const [phoneDropOff, setPhoneDropOff] = useState('701234567');
+  const [countryCodeDropOff, setCountryCodeDropOff] = useState('SE');
+  const [callingCodeDropOff, setCallingCodeDropOff] = useState('46');
+  const [countryDropOff, setCountryDropOff] = useState<Country | null>(null);
 
   const handleDateChange = (event: any, selectedDate: any) => {
     if (selectedDate) setDate(selectedDate);
@@ -89,6 +100,12 @@ export default function HomeScreen() {
     setCountryCode(country.cca2);
     setCallingCode(country.callingCode[0]);
     setCountry(country);
+  };
+
+  const onSelectDropOff = (country: Country) => {
+    setCountryCodeDropOff(country.cca2);
+    setCallingCodeDropOff(country.callingCode[0]);
+    setCountryDropOff(country);
   };
 
   const [activeTab, setActiveTab] = useState('pickup');
@@ -127,6 +144,13 @@ export default function HomeScreen() {
         longitudeDelta: 0.01,
       });
 
+      setRegionDropOff({
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+
       setLoading(false);
     })();
   }, []);
@@ -151,6 +175,13 @@ export default function HomeScreen() {
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
         const address = uniqueParts.join(', ');        
         setLocation(address);
+
+        setRegion({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
       } else {
         setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
@@ -159,6 +190,44 @@ export default function HomeScreen() {
       console.warn('Reverse geocoding error:', err);
       setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       setModalVisible(false);
+    }
+  };
+
+  const handleMapPressDropOff = async (e) => {
+    const coords = e.nativeEvent.coordinate;
+    setMarkerDropOff(coords);
+
+    try {
+      const geocode = await Location.reverseGeocodeAsync(coords);
+      if (geocode.length > 0) {
+        const place = geocode[0];
+        const parts = [
+          place.name,
+          place.street,
+          place.city,
+          place.region,
+          place.postalCode,
+          place.country
+        ];
+        // Filter out null/undefined/empty strings and duplicates
+        const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
+        const address = uniqueParts.join(', ');        
+        setLocationDropOff(address);
+
+        setRegionDropOff({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      } else {
+        setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+      }
+      setModalDropOffVisible(false);
+    } catch (err) {
+      console.warn('Reverse geocoding error:', err);
+      setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+      setModalDropOffVisible(false);
     }
   };
 
@@ -193,7 +262,7 @@ export default function HomeScreen() {
           <View style={styles.headerTopContent}>
             <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
             <Text style={styles.appName}>Welcome to PiqDrop.{'\n'}We value you.</Text>
-            <TouchableOpacity style={styles.bellIcon} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.bellIcon} onPress={() => router.push('/(tabs)/notification')}>
               <BellIcon size={44} color="white" />
             </TouchableOpacity>
           </View>
@@ -225,184 +294,303 @@ export default function HomeScreen() {
         </Animated.View>
 
         <View style={styles.form}>
-          <View style={styles.senderProfileContainer}> 
-            <View style={styles.senderProfileImageContainer}>
-              <Image source={require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
-            </View>
-            <View style={styles.senderProfileTextContainer}> 
-              <Text style={styles.title}>John Doe</Text>
-              <Text style={styles.subtitle}>sender</Text>
-            </View>
-          </View>
-          
-          <Text style={styles.label}>Name</Text>
-          <View style={styles.inputContainer}>
-            <UserRoundedIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
-          </View>
+          {/* Sliding Content */}
+          <View style={styles.sliderContainer}>
+            <Animated.View style={[styles.animatedView, animatedStyles]}>
+              <View style={styles.tabContent}>
 
-          <Text style={styles.label}>Number</Text>
-          <View style={styles.inputContainer}>
-            <CountryPicker
-              countryCode={countryCode as Country["cca2"]}
-              withFilter
-              withFlag
-              withCallingCode
-              withAlphaFilter
-              withCallingCodeButton
-              withModal
-              onSelect={onSelect}
-            />
-            <SelectDownArrowIcon size={16} color={COLORS.text} /> 
-            <TextInput
-              style={styles.input}
-              placeholder="Phone number"
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-            />
-          </View>
-        
-          <View style={styles.rowContainer}>
-            <View style={styles.rowItem}>
-              <Text style={styles.label}>Weight</Text>
-              <View style={styles.inputContainer}>
-                <WeightIcon size={20} color={COLORS.text} /> 
-                <TextInput placeholder="Weight" value={weight} onChangeText={setWeight} style={styles.input} keyboardType="numeric" />
-              </View>
-            </View>
-            <View style={styles.rowItem}>
-              <Text style={styles.label}>Price</Text>
-              <View style={styles.inputContainer}>
-                <MoneyIcon size={20} color={COLORS.text} />
-                <TextInput placeholder="Price" value={price} onChangeText={setPrice} style={styles.input} keyboardType="numeric" />
-              </View>
-            </View>
-          </View>
-
-          <Text style={styles.label}>Location</Text>
-          <View style={styles.inputContainer}>
-            <LocationIcon size={20} color={COLORS.text} /> 
-            <TextInput placeholder="Location" value={location} onChangeText={setLocation} onFocus={() => setModalVisible(true)} style={styles.input} />
-
-            <Modal visible={modalVisible} animationType="slide">
-              <View style={{ flex: 1 }}>
-                {/* Map View */}
-                {mode === 'map' && (
-                  <>
-                    {region && (
-                      <>
-                      <MapView
-                        style={{ flex: 1 }}
-                        initialRegion={region}
-                        onPress={handleMapPress}
-                      >
-                        {marker && <Marker coordinate={marker} />}
-                      </MapView>
-                      <Text style={styles.mapHint}>Tap on the map to select location</Text>
-                      </>
-                    )}
-                  </>
-                )}
-
-                {/* Manual Entry */}
-                {mode === 'manual' && (
-                  <View style={styles.manualContainer}>
-                    <TextInput
-                      placeholder="Type address here"
-                      value={location}
-                      onChangeText={setLocation}
-                      style={styles.manualInput}
-                      multiline
-                    />
+                <View style={styles.senderProfileContainer}> 
+                  <View style={styles.senderProfileImageContainer}>
+                    <Image source={require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
                   </View>
-                )}
-                {/* Mode switch buttons */}
-                <View style={styles.toggleContainer}>
-                  <TouchableOpacity
-                    style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                    onPress={() => setMode('map')}
-                  >
-                    <Text style={styles.toggleText}>Pick from Map</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                    onPress={() => setMode('manual')}
-                  >
-                    <Text style={styles.toggleText}>Enter Manually</Text>
-                  </TouchableOpacity>
+                  <View style={styles.senderProfileTextContainer}> 
+                    <Text style={styles.title}>{name}</Text>
+                    <Text style={styles.subtitle}>Sender</Text>
+                  </View>
                 </View>
-                <View style={styles.footer}>
-                  <Button title="Use This Address" onPress={() => setModalVisible(false)} />
+                
+                <Text style={styles.label}>Name</Text>
+                <View style={styles.inputContainer}>
+                  <UserRoundedIcon size={20} color={COLORS.text} />
+                  <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
                 </View>
-              </View>
-            </Modal>
-          </View>
 
-          <Text style={styles.label}>More details</Text>
-          <View style={styles.inputContainer}>
-            <TextInput placeholder="Write here..." value={details} onChangeText={setDetails} style={styles.input} />
-          </View>
+                <Text style={styles.label}>Number</Text>
+                <View style={styles.inputContainer}>
+                  <CountryPicker
+                    countryCode={countryCode as Country["cca2"]}
+                    withFilter
+                    withFlag
+                    withCallingCode
+                    withAlphaFilter
+                    withCallingCodeButton
+                    withModal
+                    onSelect={onSelect}
+                  />
+                  <SelectDownArrowIcon size={16} color={COLORS.text} /> 
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Phone number"
+                    keyboardType="phone-pad"
+                    value={phone}
+                    onChangeText={setPhone}
+                  />
+                </View>
+              
+                <View style={styles.rowContainer}>
+                  <View style={styles.rowItem}>
+                    <Text style={styles.label}>Weight</Text>
+                    <View style={styles.inputContainer}>
+                      <WeightIcon size={20} color={COLORS.text} /> 
+                      <TextInput placeholder="Weight" value={weight} onChangeText={setWeight} style={styles.input} keyboardType="numeric" />
+                    </View>
+                  </View>
+                  <View style={styles.rowItem}>
+                    <Text style={styles.label}>Price</Text>
+                    <View style={styles.inputContainer}>
+                      <MoneyIcon size={20} color={COLORS.text} />
+                      <TextInput placeholder="Price" value={price} onChangeText={setPrice} style={styles.input} keyboardType="numeric" />
+                    </View>
+                  </View>
+                </View>
 
-          <Text style={styles.label}>Pickup date and location</Text>
-          <View style={styles.rowContainer}>
-            <View style={styles.rowItem}>
-              <Pressable onPress={() => setShowDateModal(true)} style={styles.inputContainer}>
-                <CalendarIcon size={20} color={COLORS.text} /> 
-                <Text style={styles.input}>{formatDate(date) || 'Select Date'}</Text>
-              </Pressable>
-            </View>
-            <View style={styles.rowItem}>
-              <Pressable onPress={() => setShowTimeModal(true)} style={styles.inputContainer}>
-                <TimeIcon size={20} color={COLORS.text} />
-                <Text style={styles.input}>{formatTime(time) || 'Select Time'}</Text>
-              </Pressable>
-            </View>
-          </View>
-          <View style={styles.infoContainer}>
-            <InfoCircleIcon size={14} color={COLORS.text} />
-            <Text style={styles.infoText}>Time zone is based on pickup location</Text>
-          </View>
+                <Text style={styles.label}>Location</Text>
+                <View style={styles.inputContainer}>
+                  <LocationIcon size={20} color={COLORS.text} /> 
+                  <TextInput placeholder="Location" value={location} onChangeText={setLocation} onFocus={() => setModalVisible(true)} style={styles.input} />
 
-          {/* Date Modal */}
-          <Modal visible={showDateModal} transparent animationType="slide">
-            <View style={styles.modalBackground}>
-              <View style={styles.modalContainer}>
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-                  onChange={handleDateChange}
-                  style={styles.picker}
-                />
-                <TouchableOpacity onPress={() => setShowDateModal(false)} style={styles.modalButton}>
-                  <Text style={styles.modalButtonText}>Done</Text>
+                  <Modal visible={modalVisible} animationType="slide">
+                    <View style={{ flex: 1 }}>
+                      {/* Map View */}
+                      {mode === 'map' && (
+                        <>
+                          {region && (
+                            <>
+                            <MapView
+                              style={{ flex: 1 }}
+                              initialRegion={region}
+                              onPress={handleMapPress}
+                            >
+                              {marker && <Marker coordinate={marker} />}
+                            </MapView>
+                            <Text style={styles.mapHint}>Tap on the map to select location</Text>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {/* Manual Entry */}
+                      {mode === 'manual' && (
+                        <View style={styles.manualContainer}>
+                          <TextInput
+                            placeholder="Type address here"
+                            value={location}
+                            onChangeText={setLocation}
+                            style={styles.manualInput}
+                            multiline
+                          />
+                        </View>
+                      )}
+                      {/* Mode switch buttons */}
+                      <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
+                          onPress={() => setMode('map')}
+                        >
+                          <Text style={styles.toggleText}>Pick from Map</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+                          onPress={() => setMode('manual')}
+                        >
+                          <Text style={styles.toggleText}>Enter Manually</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.footer}>
+                        <Button title="Use This Address" onPress={() => setModalVisible(false)} />
+                      </View>
+                    </View>
+                  </Modal>
+                </View>
+
+                <Text style={styles.label}>More details</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput placeholder="Write here..." value={details} onChangeText={setDetails} style={styles.input} />
+                </View>
+
+                <Text style={styles.label}>Pickup date and location</Text>
+                <View style={styles.rowContainer}>
+                  <View style={styles.rowItem}>
+                    <Pressable onPress={() => setShowDateModal(true)} style={styles.inputContainer}>
+                      <CalendarIcon size={20} color={COLORS.text} /> 
+                      <Text style={styles.input}>{formatDate(date) || 'Select Date'}</Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.rowItem}>
+                    <Pressable onPress={() => setShowTimeModal(true)} style={styles.inputContainer}>
+                      <TimeIcon size={20} color={COLORS.text} />
+                      <Text style={styles.input}>{formatTime(time) || 'Select Time'}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+                <View style={styles.infoContainer}>
+                  <InfoCircleIcon size={14} color={COLORS.text} />
+                  <Text style={styles.infoText}>Time zone is based on pickup location</Text>
+                </View>
+
+                {/* Date Modal */}
+                <Modal visible={showDateModal} transparent animationType="slide">
+                  <View style={styles.modalBackground}>
+                    <View style={styles.modalContainer}>
+                      <DateTimePicker
+                        value={date}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                        onChange={handleDateChange}
+                        style={styles.picker}
+                      />
+                      <TouchableOpacity onPress={() => setShowDateModal(false)} style={styles.modalButton}>
+                        <Text style={styles.modalButtonText}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
+
+                {/* Time Modal */}
+                <Modal visible={showTimeModal} transparent animationType="slide">
+                  <View style={styles.modalBackground}>
+                    <View style={styles.modalContainer}>
+                      <DateTimePicker
+                        value={time}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={handleTimeChange}
+                        style={styles.picker}
+                      />
+                      <TouchableOpacity onPress={() => setShowTimeModal(false)} style={styles.modalButton}>
+                        <Text style={styles.modalButtonText}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
+
+                <TouchableOpacity style={[styles.loginButton, {marginTop: 35, marginBottom: 90}]} onPress={() => router.push('/(tabs)')}>
+                  <Text style={styles.loginText}>Post Job</Text>
                 </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
 
-          {/* Time Modal */}
-          <Modal visible={showTimeModal} transparent animationType="slide">
-            <View style={styles.modalBackground}>
-              <View style={styles.modalContainer}>
-                <DateTimePicker
-                  value={time}
-                  mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleTimeChange}
-                  style={styles.picker}
-                />
-                <TouchableOpacity onPress={() => setShowTimeModal(false)} style={styles.modalButton}>
-                  <Text style={styles.modalButtonText}>Done</Text>
+              </View>
+              <View style={styles.tabContent}>
+
+                <View style={styles.senderProfileContainer}> 
+                  <View style={styles.senderProfileImageContainer}>
+                    <Image source={require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
+                  </View>
+                  <View style={styles.senderProfileTextContainer}> 
+                    <Text style={styles.title}>{nameDropOff}</Text>
+                    <Text style={styles.subtitle}>Receiver</Text>
+                  </View>
+                  <Text style={styles.dropOffText}>Drop off</Text>
+                </View>
+
+                <Text style={styles.label}>Name</Text>
+                <View style={styles.inputContainer}>
+                  <UserRoundedIcon size={20} color={COLORS.text} />
+                  <TextInput placeholder="Name" value={nameDropOff} onChangeText={setNameDropOff} style={styles.input} />
+                </View>
+
+                <Text style={styles.label}>Number</Text>
+                <View style={styles.inputContainer}>
+                  <CountryPicker
+                    countryCode={countryCodeDropOff as Country["cca2"]}
+                    withFilter
+                    withFlag
+                    withCallingCode
+                    withAlphaFilter
+                    withCallingCodeButton
+                    withModal
+                    onSelect={onSelectDropOff}
+                  />
+                  <SelectDownArrowIcon size={16} color={COLORS.text} /> 
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Phone number"
+                    keyboardType="phone-pad"
+                    value={phoneDropOff}
+                    onChangeText={setPhoneDropOff}
+                  />
+                </View>
+
+                <Text style={styles.label}>Location</Text>
+                <View style={styles.inputContainer}>
+                  <LocationIcon size={20} color={COLORS.text} /> 
+                  <TextInput placeholder="Location" value={locationDropOff} onChangeText={setLocationDropOff} onFocus={() => setModalDropOffVisible(true)} style={styles.input} />
+
+                  <Modal visible={modalDropOffVisible} animationType="slide">
+                    <View style={{ flex: 1 }}>
+                      {/* Map View */}
+                      {mode === 'map' && (
+                        <>
+                          {region && (
+                            <>
+                            <MapView
+                              style={{ flex: 1 }}
+                              initialRegion={regionDropOff}
+                              onPress={handleMapPressDropOff}
+                            >
+                              {markerDropOff && <Marker coordinate={markerDropOff} />}
+                            </MapView>
+                            <Text style={styles.mapHint}>Tap on the map to select location</Text>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {/* Manual Entry */}
+                      {mode === 'manual' && (
+                        <View style={styles.manualContainer}>
+                          <TextInput
+                            placeholder="Type address here"
+                            value={locationDropOff}
+                            onChangeText={setLocationDropOff}
+                            style={styles.manualInput}
+                            multiline
+                          />
+                        </View>
+                      )}
+                      {/* Mode switch buttons */}
+                      <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
+                          onPress={() => setMode('map')}
+                        >
+                          <Text style={styles.toggleText}>Pick from Map</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+                          onPress={() => setMode('manual')}
+                        >
+                          <Text style={styles.toggleText}>Enter Manually</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.footer}>
+                        <Button title="Use This Address" onPress={() => setModalDropOffVisible(false)} />
+                      </View>
+                    </View>
+                  </Modal>
+                </View>
+
+                <Text style={styles.label}>More details</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput placeholder="Write here..." value={detailsDropOff} onChangeText={setDetailsDropOff} style={styles.input} />
+                </View>
+                <TouchableOpacity style={[styles.loginButton, {marginTop: 35, marginBottom: 27}]} onPress={() => router.push('/(tabs)')}>
+                  <Text style={styles.loginText}>Post Job</Text>
                 </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
 
-          <TouchableOpacity style={[styles.loginButton, {marginTop: 35, marginBottom: 27}]} onPress={() => router.push('/(tabs)')}>
-            <Text style={styles.loginText}>Post job</Text>
-          </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </View>
+
         </View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -497,6 +685,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     marginBottom: 0,
   },
+  dropOffText: {
+    fontSize: 14,
+    fontFamily: 'nunito-bold',
+    color: COLORS.background,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    letterSpacing: 0.2,
+    marginLeft: 'auto',
+  },
   rowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -517,7 +716,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 15,
     alignItems: 'center',
-    marginTop: 14,
+    marginTop: 13,
     height: 54,
   },
   input: {
@@ -652,25 +851,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   sliderContainer: {
-    overflow: 'hidden',
     width: '100%',
-    height: 120, // Adjust to your content height
-    marginTop: 20,
   },
   animatedView: {
     flexDirection: 'row',
     width: screenWidth * 2,
+    gap: 32,
+    overflow: 'hidden',
   },
   tabContent: {
-    width: screenWidth,
-    padding: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    justifyContent: 'center',
-  },
-  contentText: {
-    color: COLORS.text,
-    fontSize: 15,
+    width: screenWidth - 32,
   },
   
 });
