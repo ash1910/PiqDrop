@@ -15,6 +15,7 @@ import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { Picker } from '@react-native-picker/picker';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
+import { COUNTRIES } from '@/components/countries';
 
 const HEADER_HEIGHT = 207;
 
@@ -30,19 +31,6 @@ const COLORS = {
   facebook: '#1877F2',
   google: '#DB4437',
 };
-
-const COUNTRIES = [
-  'United States',
-  'United Kingdom',
-  'Canada',
-  'Australia',
-  'Germany',
-  'France',
-  'Sweden',
-  'Japan',
-  'China',
-  'India'
-];
 
 const GENDERS = [
   'Male',

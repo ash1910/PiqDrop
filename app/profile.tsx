@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -8,23 +9,15 @@ import Animated, {
   useScrollViewOffset,
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
-import Icon from 'react-native-vector-icons/Feather'; // or any icon library
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 import { RightArrowIcon } from '@/components/icons/RightArrowIcon';
 import { LetterIcon } from '@/components/icons/LetterIcon';
-import { SafetyIcon } from '@/components/icons/SafetyIcon';
-import { WalletIcon } from '@/components/icons/WalletIcon';
-import { PlaceIcon } from '@/components/icons/PlaceIcon';
-import { PlusIcon } from '@/components/icons/PlusIcon';
-import { FileIcon } from '@/components/icons/FileIcon';
-import { ShieldKeyholeIcon } from '@/components/icons/ShieldKeyholeIcon';
-import { BugIcon } from '@/components/icons/BugIcon';
-import { FrameIcon } from '@/components/icons/FrameIcon';
-import { HeadphonesRoundIcon } from '@/components/icons/HeadphonesRoundIcon';
-import { ShareIcon } from '@/components/icons/ShareIcon';
-import { TrashBinMinimalistic2Icon } from '@/components/icons/TrashBinMinimalistic2Icon';
+import { ComplexGearIcon } from '@/components/icons/ComplexGearIcon';
+import { EditIcon } from '@/components/icons/EditIcon';
+import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
 
 const HEADER_HEIGHT = 156;
+const { width, height } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#55B086',
@@ -37,8 +30,14 @@ const COLORS = {
   divider: '#D9DFD9',
 };
 
-export default function AccountScreen() {
+export default function ProfileScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [countryCode, setCountryCode] = useState('SE'); //sweden 
+  const [callingCode, setCallingCode] = useState('46'); 
+  const [country, setCountry] = useState<Country | null>(null);
+  const [withCallingCode, setWithCallingCode] = useState(true);
+  const [flag, setFlag] = useState('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAMAAABpA6zvAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAJxQTFRFAEBzAD90I1NjG05nAD50AD9zHVBmG09nPGFYM1tcGk5nHE5m37sO37oO5L0M4bsN3bkP3roP5L0M/80A/8wA3LkQAEBzAD90I1Nj3LgQGk5nAD50AD9zAD51I1JkGk1oAD11578L4LsO/MoC+skC4rwN4bwN5r4L/MoB+8oC470MIFFkHlBlP2JXNl1bHU9mH1BlI1FkI1Jj////hM0NagAAABJ0Uk5T/Pz9/Pz8/v7+/v7+/v7+/v7+yMbBHgAAAAFiS0dEMzfVfF4AAAAJcEhZcwAAAEgAAABIAEbJaz4AAACNSURBVDjL7dHJDoJAEEXRh+KE4tQlqC2COA/g8P8fp0AKNxXSC+OKs75JJa8AZjWmikjNmnZLAo/58zxcLPVKUoc/Cn0WrIswjLQEbdbpbrIw7jl9CQbMHW7pYzcaTyRQX5RTMpAh89D49J4djqesO19iEa7slhTzpPeHBOWi0bN68PJH+lX9wjr8b/gGzuNz038exeMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMDdUMTM6MTQ6NTYrMDI6MDCyBjBrAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDEzLTEwLTA3VDEzOjE0OjU2KzAyOjAww1uI1wAAAABJRU5ErkJggg==');
+  const [phone, setPhone] = useState('435436567');
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
 
@@ -58,6 +57,14 @@ export default function AccountScreen() {
       ],
     };
   });
+
+  const onSelect = (country: Country) => {
+    setCountryCode(country.cca2);
+    setCallingCode(country.callingCode[0]);
+    setCountry(country);
+    setFlag(country.flag);
+    console.log(country.flag);
+  };
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
@@ -98,11 +105,14 @@ export default function AccountScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Account</Text>
+          <Text style={styles.pageTitle}>Profile</Text>
         </Animated.View>
 
         <View style={styles.form}>
           <View style={styles.profileInfoRow}>
+            <TouchableOpacity style={styles.editProfile} onPress={() => router.push('/updateProfile')}>
+              <EditIcon size={20} />
+            </TouchableOpacity>
             <Image source={require('@/assets/images/profile_pic.jpg')} style={styles.profileImage} />
             <Text style={styles.profileName}>Amy Jackson</Text>
             <Text style={styles.profileUserName}>@Amy23</Text>
@@ -110,30 +120,28 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>General</Text>
-              <View style={styles.sectionLine} />
+              <Text style={styles.sectionTitle}>Full Name</Text>
             </View>
             <View style={styles.card}>
-              <TouchableOpacity style={styles.row} onPress={() => router.push('/profile')}>
+              <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
                   <UserRoundedIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Personal Info</Text>
+                  <Text style={styles.rowLabel}>John Doe</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => router.push('/safety')}>
-                <View style={styles.rowLeft}>
-                  <SafetyIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Safety</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row}>
+            </View>
+          </View>
+
+          <View style={styles.innerContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Email</Text>
+            </View>
+            <View style={styles.card}>
+              <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
                   <LetterIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Language</Text>
+                  <Text style={styles.rowLabel}>Md.ali453@gmail.com</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -142,30 +150,13 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Billing and Places</Text>
-              <View style={styles.sectionLine} />
+              <Text style={styles.sectionTitle}>Gender</Text>
             </View>
             <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
+              <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
-                  <WalletIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Payment</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <PlaceIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Saved Places</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <PlusIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Add a Place</Text>
+                  <ComplexGearIcon size={20} color={COLORS.text} />
+                  <Text style={styles.rowLabel}>Male</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -174,90 +165,38 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Legal</Text>
-              <View style={styles.sectionLine} />
+              <Text style={styles.sectionTitle}>Mobile</Text>
             </View>
             <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
+              <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
-                  <FileIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Terms of Use</Text>
+                  {flag && (
+                    <Image 
+                      source={{ uri: flag }} 
+                      style={{ width: 24, height: 16 }}
+                    />
+                  )}
+                  <Text style={[styles.rowLabel, {marginLeft: 8}]}>+{callingCode}</Text>
+                  <SelectDownArrowIcon size={16} color={COLORS.text} /> 
+                  <Text style={styles.rowLabel}>{phone}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <ShieldKeyholeIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Privacy Policy</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.innerContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Personal</Text>
-              <View style={styles.sectionLine} />
-            </View>
-            <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <BugIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Report a Bug</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <FrameIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Logout</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.innerContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Social</Text>
-              <View style={styles.sectionLine} />
-            </View>
-            <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <HeadphonesRoundIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Support</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <ShareIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Share app</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={[styles.innerContainer, {paddingTop: 8}]}>
-            <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <TrashBinMinimalistic2Icon size={20} color={'#FF4949'} />
-                  <Text style={[styles.rowLabel, {color: '#FF4949'}]}>Delete Account</Text>
-                </View>
-                <RightArrowIcon size={20} color={'#FF4949'} />
               </TouchableOpacity>
             </View>
           </View>
 
         </View>
       </Animated.ScrollView>
+      {!isKeyboardVisible && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={styles.continueButton}
+            onPress={() => router.push('/updateProfile')}
+          >
+            <Text style={styles.continueButtonText}>Edit Info</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -317,6 +256,12 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 8,
   },
+  editProfile :{
+    position: 'absolute',
+    left: width/2 ,
+    top: 45,
+    zIndex: 1,
+  },
   profileName: {
     fontFamily: 'nunito-bold',
     fontSize: 18,
@@ -343,7 +288,7 @@ const styles = StyleSheet.create({
     fontFamily: 'nunito-bold',
     fontSize: 14,
     letterSpacing: 0.2,
-    color: COLORS.subtitle,
+    color: COLORS.text,
     marginRight: 12,
   },
   sectionLine: {
@@ -381,5 +326,49 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
     marginHorizontal: 14,
   },
-
+  label: {
+    marginTop: 18,
+    fontFamily: 'nunito-bold',
+    fontSize: 14,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.background,
+    borderRadius: 14,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    marginTop: 13,
+    height: 54,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 10,
+    fontFamily: 'nunito-medium',
+    fontSize: 16,
+    paddingVertical: 15,
+    color: COLORS.text,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 22,
+  },
+  continueButton: {
+    backgroundColor: COLORS.primary,
+    height: 54,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  continueButtonText: {
+    color: COLORS.buttonText,
+    fontFamily: 'nunito-bold',
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
 });
