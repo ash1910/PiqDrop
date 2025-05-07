@@ -44,6 +44,7 @@ export default function RootLayout() {
         <Stack.Screen name="accountRecovery" options={{ headerShown: false }} />
         <Stack.Screen name="uploadFile" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="review" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
