@@ -202,7 +202,7 @@ export default function AccountScreen() {
               <View style={styles.sectionLine} />
             </View>
             <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
+              <TouchableOpacity style={styles.row} onPress={() => router.push('/report')}>
                 <View style={styles.rowLeft}>
                   <BugIcon size={20} color={COLORS.text} />
                   <Text style={styles.rowLabel}>Report a Bug</Text>
@@ -226,7 +226,7 @@ export default function AccountScreen() {
               <View style={styles.sectionLine} />
             </View>
             <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
+              <TouchableOpacity style={styles.row} onPress={() => router.push('/faq')}>
                 <View style={styles.rowLeft}>
                   <HeadphonesRoundIcon size={20} color={COLORS.text} />
                   <Text style={styles.rowLabel}>Support</Text>
