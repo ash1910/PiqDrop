@@ -89,6 +89,18 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="orderDetail"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="calling"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

@@ -50,7 +50,6 @@ export default function RootLayout() {
         <Stack.Screen name="safety" options={{ headerShown: false }} />
         <Stack.Screen name="report" options={{ headerShown: false }} />
         <Stack.Screen name="faq" options={{ headerShown: false }} />
-        <Stack.Screen name="supportService" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

@@ -243,7 +243,7 @@ export default function ManageScreen() {
                       <MoreVerticalIcon size={20} />
                     </TouchableOpacity>
                   </View>
-                  <View style={styles.cardContainer}>
+                  <TouchableOpacity style={styles.cardContainer} onPress={() => router.push('/orderDetail')}>
                     <View style={styles.mapPinContainer}>
                       <MapIcon size={24} color={COLORS.primary} />
                       <VerticalDashedLineIcon />
@@ -266,7 +266,7 @@ export default function ManageScreen() {
                         </View>
                       ))}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                   
                   <View style={styles.footer}>
                     <Text style={styles.price}>$20.00</Text>

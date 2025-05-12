@@ -266,7 +266,7 @@ export default function HomeScreen() {
               <BellIcon size={44} color="white" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.loginButton}>
+          <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/(tabs)/orderDetail')}>
             <Text style={styles.loginText}>Send package</Text>
           </TouchableOpacity>
           {/* Toggle Buttons */}
