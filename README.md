@@ -20,9 +20,13 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 4. Android Build Preview for Simulator: eas build -p android --profile preview
 
-5. Run Emulator manually: /Volumes/ExAsh/Library/Android/sdk/emulator/emulator -read-only @Resizable_Experimental_API_UpsideDownCake
+5. Run Android Emulator manually: /Volumes/ExAsh/Library/Android/sdk/emulator/emulator -read-only @Resizable_Experimental_API_UpsideDownCake
 
 6. To create only the ios folder: npx expo prebuild --platform ios
+
+7.1. Build to Expo for submit to Appstore: eas build --platform ios --profile production
+
+7.2. Submit to App Store: eas submit --platform ios --profile production
 
 In the output, you'll find options to open the app in a
 

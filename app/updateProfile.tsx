@@ -140,7 +140,16 @@ export default function UpdateProfileScreen() {
   }, []);
 
   useEffect(() => {
-    StatusBar.setBarStyle('dark-content');
+    StatusBar.setBarStyle('dark-content'); 
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera permissions to make this work!');
+      }
+    })();
   }, []);
 
   const handleMapPress = async (e) => {
@@ -284,10 +293,14 @@ export default function UpdateProfileScreen() {
               <EditIcon size={20} />
             </TouchableOpacity>
             {profileImage && (
-              <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              <TouchableOpacity style={styles.profileImage} onPress={() => takePicture()}>
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              </TouchableOpacity>
             )}
             {!profileImage && (
-              <Image source={require('@/assets/images/profile_pic.jpg')} style={styles.profileImage} />
+              <TouchableOpacity style={styles.profileImage} onPress={() => takePicture()}>
+                <Image source={require('@/assets/images/profile_pic.jpg')} style={styles.profileImage} />
+              </TouchableOpacity>
             )}
             <Text style={styles.profileName}>{firstName} {lastName}</Text>
             <Text style={styles.profileUserName}>@Amy23</Text>

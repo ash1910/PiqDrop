@@ -4,26 +4,33 @@
     "slug": "piqdrop",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/ios-light.png",
+    "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "cli": {
+      "appVersionSource": "remote"
+    },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.ashraful1910.piqdrop",
+      "bundleIdentifier": "com.amarhaor2.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show your current location on the map.",
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to show your current location on the map.",
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos of your vehicle.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save photos of your vehicle."
       },
       "icon": {
         "dark": "./assets/icons/ios-dark.png",
-        "light": "./assets/icons/ios-light.png",
+        "light": "./assets/icons/ios-dark.png",
         "tinted": "./assets/icons/ios-tinted.png"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#55B086"
       },
       "package": "com.ashraful1910.piqdrop"
     },

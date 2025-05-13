@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button, TouchableOpacity, Image, StyleSheet, Sta
 import { Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -61,10 +61,10 @@ export default function HomeScreen() {
   const [locationDropOff, setLocationDropOff] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalDropOffVisible, setModalDropOffVisible] = useState(false);
-  const [marker, setMarker] = useState(null);
-  const [markerDropOff, setMarkerDropOff] = useState(null);
-  const [region, setRegion] = useState(null);
-  const [regionDropOff, setRegionDropOff] = useState(null);
+  const [marker, setMarker] = useState<{latitude: number; longitude: number} | null>(null);
+  const [markerDropOff, setMarkerDropOff] = useState<{latitude: number; longitude: number} | null>(null);
+  const [region, setRegion] = useState<Region | null>(null);
+  const [regionDropOff, setRegionDropOff] = useState<Region | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState('map');
   const [details, setDetails] = useState('');
@@ -90,10 +90,10 @@ export default function HomeScreen() {
     if (Platform.OS !== 'ios') setShowTimeModal(false);
   };
 
-  const formatDate = (d) =>
+  const formatDate = (d: Date) =>
     d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  const formatTime = (t) =>
+  const formatTime = (t: Date) =>
     t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   const onSelect = (country: Country) => {
@@ -111,7 +111,7 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState('pickup');
   const translateX = useSharedValue(0);
 
-  const switchTab = (tab) => {
+  const switchTab = (tab: 'pickup' | 'dropoff') => {
     setActiveTab(tab);
     translateX.value = withTiming(tab === 'pickup' ? 0 : -screenWidth, { duration: 250 });
   };
@@ -124,38 +124,39 @@ export default function HomeScreen() {
     StatusBar.setBarStyle('light-content');
   }, []);
 
-
-
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        alert('Permission to access location was denied');
-        return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          alert('Permission to access location was denied');
+          return;
+        }
+
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        
+        const { latitude, longitude } = currentLocation.coords;
+        const initialRegion: Region = {
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+
+        setRegion(initialRegion);
+        setRegionDropOff(initialRegion);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error getting location:', error);
+        alert('Error getting location. Please try again.');
+        setLoading(false);
       }
-
-      const currentLocation = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = currentLocation.coords;
-
-      setRegion({
-        latitude,
-        longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      });
-
-      setRegionDropOff({
-        latitude,
-        longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      });
-
-      setLoading(false);
     })();
   }, []);
 
-  const handleMapPress = async (e) => {
+  const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     setMarker(coords);
 
@@ -171,17 +172,17 @@ export default function HomeScreen() {
           place.postalCode,
           place.country
         ];
-        // Filter out null/undefined/empty strings and duplicates
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
         const address = uniqueParts.join(', ');        
         setLocation(address);
 
-        setRegion({
+        const newRegion: Region = {
           latitude: coords.latitude,
           longitude: coords.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-        });
+        };
+        setRegion(newRegion);
       } else {
         setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
@@ -193,7 +194,7 @@ export default function HomeScreen() {
     }
   };
 
-  const handleMapPressDropOff = async (e) => {
+  const handleMapPressDropOff = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     setMarkerDropOff(coords);
 
@@ -209,17 +210,17 @@ export default function HomeScreen() {
           place.postalCode,
           place.country
         ];
-        // Filter out null/undefined/empty strings and duplicates
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
         const address = uniqueParts.join(', ');        
         setLocationDropOff(address);
 
-        setRegionDropOff({
+        const newRegion: Region = {
           latitude: coords.latitude,
           longitude: coords.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-        });
+        };
+        setRegionDropOff(newRegion);
       } else {
         setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
@@ -230,7 +231,6 @@ export default function HomeScreen() {
       setModalDropOffVisible(false);
     }
   };
-
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -368,7 +368,12 @@ export default function HomeScreen() {
                             <>
                             <MapView
                               style={{ flex: 1 }}
-                              initialRegion={region}
+                              initialRegion={region || {
+                                latitude: 0,
+                                longitude: 0,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01,
+                              }}
                               onPress={handleMapPress}
                             >
                               {marker && <Marker coordinate={marker} />}
@@ -534,7 +539,12 @@ export default function HomeScreen() {
                             <>
                             <MapView
                               style={{ flex: 1 }}
-                              initialRegion={regionDropOff}
+                              initialRegion={regionDropOff || {
+                                latitude: 0,
+                                longitude: 0,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01,
+                              }}
                               onPress={handleMapPressDropOff}
                             >
                               {markerDropOff && <Marker coordinate={markerDropOff} />}

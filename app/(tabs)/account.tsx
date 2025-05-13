@@ -43,6 +43,19 @@ const COLORS = {
   divider: '#D9DFD9',
 };
 
+const SUPPORTED_LANGUAGES = [
+  'English',
+  'Hindi',
+  'Spanish',
+  'Arabic',
+  'Portuguese',
+  'Russian',
+  'Japanese',
+  'French',
+  'Swedish',
+  'German',
+];
+
 export default function AccountScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -307,7 +320,7 @@ export default function AccountScreen() {
                 style={styles.row}
                 onPress={() => openLegalModal(
                   'Privacy Policy',
-                  'Your privacy is important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.\n\n1. Information We Collect\nWe collect information that you provide directly to us, including but not limited to your name, email address, phone number, delivery addresses, and any other information you choose to provide.\n\n2. How We Use Your Information\nWe use the information we collect to provide, maintain, and improve our services, to develop new ones, and to protect our company and our users. This includes processing your orders, communicating with you about your account, and sending you updates about our services.\n\n3. Information Sharing and Disclosure\nWe do not share your personal information with third parties except as described in this privacy policy. We may share your information with delivery partners, payment processors, and service providers who assist us in operating our platform.\n\n4. Data Security\nWe implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. This includes encryption, secure servers, and regular security assessments.\n\n5. Your Rights and Choices\nYou have the right to access, correct, or delete your personal information. You can also opt-out of marketing communications and manage your privacy preferences through your account settings.\n\n6. Cookies and Tracking Technologies\nWe use cookies and similar tracking technologies to collect information about your browsing activities and preferences. This helps us improve your experience and provide personalized content.\n\n7. Children\'s Privacy\nOur services are not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.\n\n8. International Data Transfers\nYour information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place to protect your information in compliance with applicable data protection laws.\n\n9. Data Retention\nWe retain your personal information for as long as necessary to fulfill the purposes outlined in this privacy policy, unless a longer retention period is required or permitted by law.\n\n10. Changes to This Policy\nWe may update this privacy policy from time to time. We will notify you of any changes by posting the new privacy policy on this page and updating the "Last Updated" date. We encourage you to review this policy periodically.'
+                  'Your privacy is important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.\n\n1. Information We Collect\nWe collect information that you provide directly to us, including but not limited to your name, email address, phone number, delivery addresses, and any other information you choose to provide.\n\n2. How We Use Your Information\nWe use the information we collect to provide, maintain, and improve our services, to develop new ones, and to protect our company and our users. This includes processing your orders, communicating with you about your account, and sending you updates about our services.\n\n3. Information Sharing and Disclosure\nWe do not share your personal information with third parties except as described in this privacy policy. We may share your information with delivery partners, payment processors, and service providers who assist us in operating our platform.\n\n4. Data Security\nWe implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. This includes encryption, secure servers, and regular security assessments.\n\n5. Your Rights and Choices\nYou have the right to access, correct, or delete your personal information. You can also opt-out of marketing communications and manage your privacy preferences through your account settings.\n\n6. Cookies and Tracking Technologies\nWe use cookies and similar tracking technologies to collect information about your browsing activities and preferences. This helps us improve your experience and provide personalized content.\n\n7. Children\'s Privacy\nOur services are not intended for children under 18 years of age. We do not knowingly collect personal information from children under 18. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.\n\n8. International Data Transfers\nYour information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place to protect your information in compliance with applicable data protection laws.\n\n9. Data Retention\nWe retain your personal information for as long as necessary to fulfill the purposes outlined in this privacy policy, unless a longer retention period is required or permitted by law.\n\n10. Changes to This Policy\nWe may update this privacy policy from time to time. We will notify you of any changes by posting the new privacy policy on this page and updating the "Last Updated" date. We encourage you to review this policy periodically.'
                 )}
               >
                 <View style={styles.rowLeft}>
@@ -631,13 +644,19 @@ export default function AccountScreen() {
           activeOpacity={1} 
           onPress={() => setShowLanguageModal(false)}
         >
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { height: 600 }]}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowLanguageModal(false)}
+            >
+              <Icon name="x" size={24} color={COLORS.text} />
+            </TouchableOpacity>
             <View style={styles.modalIconContainer}>
               <LetterIcon size={48} color={COLORS.primary} />
             </View>
             <Text style={styles.modalTitle}>Select Language</Text>
-            <View style={styles.languageOptions}>
-              {['English', 'Swedish', 'German'].map((language) => (
+            <ScrollView style={[styles.languageOptions, { height: 400 }]}>
+              {SUPPORTED_LANGUAGES.map((language) => (
                 <TouchableOpacity
                   key={language}
                   style={[
@@ -660,7 +679,7 @@ export default function AccountScreen() {
                   )}
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
             <TouchableOpacity 
               style={[styles.modalButton, styles.modalButtonCancel]} 
               onPress={() => setShowLanguageModal(false)}
@@ -817,6 +836,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
+    maxHeight: '80%',
   },
   modalIconContainer: {
     width: 80,
@@ -1049,6 +1069,7 @@ const styles = StyleSheet.create({
   languageOptions: {
     width: '100%',
     marginBottom: 24,
+    maxHeight: 400,
   },
   languageOption: {
     flexDirection: 'row',
@@ -1069,5 +1090,10 @@ const styles = StyleSheet.create({
   },
   selectedLanguageOptionText: {
     color: COLORS.primary,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
   },
 });
