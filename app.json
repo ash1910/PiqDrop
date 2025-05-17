@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -32,7 +32,8 @@
         "foregroundImage": "./assets/icons/adaptive-icon.png",
         "backgroundColor": "#55B086"
       },
-      "package": "com.ashraful1910.piqdrop"
+      "package": "com.ashraful1910.piqdrop",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",

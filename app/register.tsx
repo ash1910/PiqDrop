@@ -231,12 +231,10 @@ export default function LoginScreen() {
               style={styles.input} 
               value={password}
               onChangeText={setPassword}
-              autoCapitalize="none"
-              keyboardType="default"
-              autoCorrect={false}
-              textContentType="none"
-              autoComplete="off"
               secureTextEntry={!showPassword}
+              autoComplete="off"
+              importantForAutofill="no"
+              textContentType="oneTimeCode"
               returnKeyType="next"
               onSubmitEditing={() => {
                 confirmPasswordInputRef.current?.focus();
@@ -260,11 +258,10 @@ export default function LoginScreen() {
               style={styles.input} 
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              autoCapitalize="none"
-              autoComplete="off"
-              textContentType="none"
               secureTextEntry={!showConfirmPassword}
-              returnKeyType="next"
+              autoComplete="off"
+              importantForAutofill="no"
+              textContentType="oneTimeCode"
             />
             <TouchableOpacity onPress={toggleConfirmPasswordVisibility}>
               <Feather 
