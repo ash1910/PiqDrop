@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
@@ -31,10 +31,13 @@ const COLORS = {
 };
 
 export default function LoginScreen() {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(true);
   const [showPassword, setShowPassword] = React.useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+  const passwordInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
@@ -66,6 +69,8 @@ export default function LoginScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
         contentContainerStyle={styles.scrollContent}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
@@ -80,16 +85,37 @@ export default function LoginScreen() {
           <Text style={styles.label}>Email</Text>
           <View style={styles.inputContainer}>
             <LetterIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Email" style={styles.input} />
+            <TextInput 
+              placeholder="Email" 
+              style={styles.input} 
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              autoFocus={true}
+              keyboardType="email-address"
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                passwordInputRef.current?.focus();
+              }}
+            />
           </View>
 
           <Text style={styles.label}>Password</Text>
           <View style={styles.inputContainer}>
             <LockIcon size={20} color={COLORS.text} />
             <TextInput 
+              ref={passwordInputRef}
               placeholder="Password" 
               secureTextEntry={!showPassword} 
               style={styles.input} 
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+              autoComplete="password"
+              autoCorrect={false}
+              returnKeyType="done"
             />
             <TouchableOpacity onPress={togglePasswordVisibility}>
               <Feather 

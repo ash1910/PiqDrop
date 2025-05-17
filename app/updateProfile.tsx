@@ -61,7 +61,7 @@ export default function UpdateProfileScreen() {
   const [lastName, setLastName] = useState('Doe');
   const [email, setEmail] = useState('john.doe@example.com');
   const [gender, setGender] = useState('Male');
-  const [nationality, setNationality] = useState('Swedish');
+  const [nationality, setNationality] = useState('Sweden');
   const [showPicker, setShowPicker] = useState(false);
   const [pickerType, setPickerType] = useState<'nationality' | 'gender'>('nationality');
   
@@ -155,7 +155,7 @@ export default function UpdateProfileScreen() {
   const handleMapPress = async (e) => {
     const coords = e.nativeEvent.coordinate;
     //console.log(coords);
-    setMarker(coords);
+    //setMarker(coords);
 
     try {
       const geocode = await Location.reverseGeocodeAsync(coords);
@@ -184,11 +184,11 @@ export default function UpdateProfileScreen() {
       } else {
         setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
-      setModalVisible(false);
+      //setModalVisible(false);
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
       setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-      setModalVisible(false);
+      //setModalVisible(false);
     }
   };
 
@@ -278,8 +278,7 @@ export default function UpdateProfileScreen() {
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        onTouchStart={dismissKeyboard}>
+        showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
@@ -309,19 +308,53 @@ export default function UpdateProfileScreen() {
           <Text style={styles.label}>First Name</Text>
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="First Name" style={styles.input} value={firstName} onChangeText={setFirstName} returnKeyType="done" onSubmitEditing={handleReturnKey} />
+            <TextInput 
+              placeholder="First Name" 
+              style={styles.input} 
+              value={firstName} 
+              onChangeText={setFirstName} 
+              returnKeyType="done" 
+              onSubmitEditing={handleReturnKey}
+              textContentType="givenName"
+              autoCapitalize="words"
+              selectionColor={COLORS.primary}
+              clearButtonMode="always"
+            />
           </View>
 
           <Text style={styles.label}>Last Name</Text>
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Last Name" style={styles.input} value={lastName} onChangeText={setLastName} returnKeyType="done" onSubmitEditing={handleReturnKey} />
+            <TextInput 
+              placeholder="Last Name" 
+              style={styles.input} 
+              value={lastName} 
+              onChangeText={setLastName} 
+              returnKeyType="done" 
+              onSubmitEditing={handleReturnKey}
+              textContentType="familyName"
+              autoCapitalize="words"
+              selectionColor={COLORS.primary}
+              clearButtonMode="always"
+            />
           </View>
 
           <Text style={styles.label}>Email</Text>
           <View style={styles.inputContainer}>
             <LetterIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Email" style={styles.input} value={email} onChangeText={setEmail} returnKeyType="done" onSubmitEditing={handleReturnKey} />
+            <TextInput 
+              placeholder="Email" 
+              style={styles.input} 
+              value={email} 
+              onChangeText={setEmail} 
+              returnKeyType="done" 
+              onSubmitEditing={handleReturnKey}
+              textContentType="emailAddress"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              selectionColor={COLORS.primary}
+              clearButtonMode="always"
+            />
           </View>
 
           <Text style={styles.label}>Mobile Number</Text>
@@ -345,13 +378,28 @@ export default function UpdateProfileScreen() {
               onChangeText={setPhone}
               returnKeyType="done"
               onSubmitEditing={handleReturnKey}
+              textContentType="telephoneNumber"
+              selectionColor={COLORS.primary}
+              clearButtonMode="always"
             />
           </View>
 
           <Text style={styles.label}>Address</Text>
           <View style={styles.inputContainer}>
-            <LocationIcon size={20} color={COLORS.text} /> 
-            <TextInput placeholder="Location" value={location} onChangeText={setLocation} onFocus={() => setModalVisible(true)} style={styles.input} returnKeyType="done" onSubmitEditing={handleReturnKey} />
+            <TouchableOpacity onPress={() => setModalVisible(true)}>
+              <LocationIcon size={20} color={COLORS.text} /> 
+            </TouchableOpacity>
+            <TextInput 
+              placeholder="Location" 
+              value={location} 
+              onChangeText={setLocation} 
+              style={styles.input} 
+              returnKeyType="done" 
+              onSubmitEditing={handleReturnKey}
+              textContentType="fullStreetAddress"
+              selectionColor={COLORS.primary}
+              clearButtonMode="always"
+            />
 
             <Modal visible={modalVisible} animationType="slide">
               <View style={{ flex: 1 }}>
@@ -363,7 +411,10 @@ export default function UpdateProfileScreen() {
                       <MapView
                         style={{ flex: 1 }}
                         initialRegion={region}
-                        onPress={handleMapPress}
+                        onPress={(e) => {
+                          const coords = e.nativeEvent.coordinate;
+                          setMarker(coords);
+                        }}
                       >
                         {marker && <Marker coordinate={marker} />}
                       </MapView>
@@ -394,20 +445,23 @@ export default function UpdateProfileScreen() {
                 {/* Mode switch buttons */}
                 <View style={styles.toggleContainer}>
                   <TouchableOpacity
-                    style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                    onPress={() => setMode('map')}
+                    style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+                    onPress={() => setModalVisible(false)}
                   >
-                    <Text style={styles.toggleText}>Pick from Map</Text>
+                    <Text style={styles.toggleText}>Close</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                    onPress={() => setMode('manual')}
+                    style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
+                    onPress={() => {
+                      if (marker) {
+                        handleMapPress({ nativeEvent: { coordinate: marker } });
+                      }
+                      setModalVisible(false);
+                    }}
                   >
-                    <Text style={styles.toggleText}>Enter Manually</Text>
+                    <Text style={styles.toggleText}>Done</Text>
                   </TouchableOpacity>
-                </View>
-                <View style={styles.footer}>
-                  <Button title="Use This Address" onPress={() => setModalVisible(false)} />
+                  
                 </View>
               </View>
             </Modal>
@@ -679,7 +733,8 @@ const styles = StyleSheet.create({
   toggleContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 30,
     backgroundColor: '#f2f2f2',
   },
   toggleButton: {

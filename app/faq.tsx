@@ -204,7 +204,7 @@ export default function SafetyScreen() {
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.continueButton}
-              onPress={() => alert('Coming soon!')}
+              onPress={() => router.push('/supportService')} 
             >
               <HeadphonesRoundIcon size={20} color={COLORS.buttonText} />
               <Text style={styles.continueButtonText}>Get Support</Text>
@@ -216,7 +216,7 @@ export default function SafetyScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => alert('Coming soon!')}
+            onPress={() => router.push('/supportService')} 
           >
             <HeadphonesRoundIcon size={20} color={COLORS.buttonText} />
             <Text style={styles.continueButtonText}>Get Support</Text>

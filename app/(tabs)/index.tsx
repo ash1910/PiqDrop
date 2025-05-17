@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, TouchableOpacity, Image, StyleSheet, StatusBar,KeyboardAvoidingView, Platform, Modal, FlatList, ActivityIndicator, Pressable, Dimensions } from 'react-native';
+import { View, Text, TextInput, Button, TouchableOpacity, Image, StyleSheet, StatusBar,KeyboardAvoidingView, Platform, Modal, Keyboard, ActivityIndicator, Pressable, Dimensions } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
@@ -186,11 +186,11 @@ export default function HomeScreen() {
       } else {
         setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
-      setModalVisible(false);
+      //setModalVisible(false);
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
       setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-      setModalVisible(false);
+      //setModalVisible(false);
     }
   };
 
@@ -224,12 +224,16 @@ export default function HomeScreen() {
       } else {
         setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
-      setModalDropOffVisible(false);
+      //setModalDropOffVisible(false);
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
       setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-      setModalDropOffVisible(false);
+      //setModalDropOffVisible(false);
     }
+  };
+
+  const handleReturnKey = () => {
+    Keyboard.dismiss();
   };
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
@@ -257,7 +261,9 @@ export default function HomeScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header]}>
           <View style={styles.headerTopContent}>
             <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
@@ -312,7 +318,18 @@ export default function HomeScreen() {
                 <Text style={styles.label}>Name</Text>
                 <View style={styles.inputContainer}>
                   <UserRoundedIcon size={20} color={COLORS.text} />
-                  <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
+                  <TextInput 
+                    placeholder="Name" 
+                    value={name}  
+                    onChangeText={setName} 
+                    style={styles.input} 
+                    textContentType="name" 
+                    autoCapitalize="words" 
+                    clearButtonMode="always" 
+                    selectionColor={COLORS.primary} 
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
+                    />
                 </View>
 
                 <Text style={styles.label}>Number</Text>
@@ -334,6 +351,11 @@ export default function HomeScreen() {
                     keyboardType="phone-pad"
                     value={phone}
                     onChangeText={setPhone}
+                    textContentType="telephoneNumber"
+                    selectionColor={COLORS.primary}
+                    clearButtonMode="always"
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
                 </View>
               
@@ -342,22 +364,45 @@ export default function HomeScreen() {
                     <Text style={styles.label}>Weight</Text>
                     <View style={styles.inputContainer}>
                       <WeightIcon size={20} color={COLORS.text} /> 
-                      <TextInput placeholder="Weight" value={weight} onChangeText={setWeight} style={styles.input} keyboardType="numeric" />
+                      <TextInput 
+                        placeholder="Weight" 
+                        value={weight} 
+                        onChangeText={setWeight} 
+                        style={styles.input} 
+                        keyboardType="numeric" 
+                        returnKeyType="done" 
+                        onSubmitEditing={handleReturnKey} />
                     </View>
                   </View>
                   <View style={styles.rowItem}>
                     <Text style={styles.label}>Price</Text>
                     <View style={styles.inputContainer}>
                       <MoneyIcon size={20} color={COLORS.text} />
-                      <TextInput placeholder="Price" value={price} onChangeText={setPrice} style={styles.input} keyboardType="numeric" />
+                      <TextInput 
+                        placeholder="Price" 
+                        value={price} 
+                        onChangeText={setPrice} 
+                        style={styles.input} 
+                        keyboardType="numeric" 
+                        returnKeyType="done" 
+                        onSubmitEditing={handleReturnKey} />
                     </View>
                   </View>
                 </View>
 
                 <Text style={styles.label}>Location</Text>
                 <View style={styles.inputContainer}>
-                  <LocationIcon size={20} color={COLORS.text} /> 
-                  <TextInput placeholder="Location" value={location} onChangeText={setLocation} onFocus={() => setModalVisible(true)} style={styles.input} />
+                  <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    <LocationIcon size={20} color={COLORS.text} /> 
+                  </TouchableOpacity>
+                  <TextInput 
+                    placeholder="Location" 
+                    value={location} 
+                    onChangeText={setLocation} 
+                    style={styles.input} 
+                    editable={false}
+                    onPress={() => setModalVisible(true)}
+                  />
 
                   <Modal visible={modalVisible} animationType="slide">
                     <View style={{ flex: 1 }}>
@@ -393,6 +438,14 @@ export default function HomeScreen() {
                             onChangeText={setLocation}
                             style={styles.manualInput}
                             multiline
+                            autoCapitalize="words"
+                            autoComplete="off"
+                            clearButtonMode="always"
+                            textContentType="fullStreetAddress"
+                            selectionColor={COLORS.primary}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleReturnKey}
                           />
                         </View>
                       )}
@@ -412,7 +465,11 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                       </View>
                       <View style={styles.footer}>
-                        <Button title="Use This Address" onPress={() => setModalVisible(false)} />
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 160, alignSelf: 'center'}]} 
+                          onPress={() => setModalVisible(false)}
+                        >
+                          <Text style={styles.toggleText}>Use This Address</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </Modal>
@@ -420,7 +477,16 @@ export default function HomeScreen() {
 
                 <Text style={styles.label}>More details</Text>
                 <View style={styles.inputContainer}>
-                  <TextInput placeholder="Write here..." value={details} onChangeText={setDetails} style={styles.input} />
+                  <TextInput 
+                    placeholder="Write here..." 
+                    value={details} 
+                    onChangeText={setDetails} 
+                    style={styles.input} 
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
+                  />
                 </View>
 
                 <Text style={styles.label}>Pickup date and location</Text>
@@ -500,7 +566,18 @@ export default function HomeScreen() {
                 <Text style={styles.label}>Name</Text>
                 <View style={styles.inputContainer}>
                   <UserRoundedIcon size={20} color={COLORS.text} />
-                  <TextInput placeholder="Name" value={nameDropOff} onChangeText={setNameDropOff} style={styles.input} />
+                  <TextInput 
+                    placeholder="Name" 
+                    value={nameDropOff} 
+                    onChangeText={setNameDropOff} 
+                    style={styles.input} 
+                    textContentType="name" 
+                    autoCapitalize="words" 
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey} 
+                    />
                 </View>
 
                 <Text style={styles.label}>Number</Text>
@@ -522,20 +599,34 @@ export default function HomeScreen() {
                     keyboardType="phone-pad"
                     value={phoneDropOff}
                     onChangeText={setPhoneDropOff}
+                    textContentType="telephoneNumber"
+                    selectionColor={COLORS.primary}
+                    clearButtonMode="always"
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
                 </View>
 
                 <Text style={styles.label}>Location</Text>
                 <View style={styles.inputContainer}>
-                  <LocationIcon size={20} color={COLORS.text} /> 
-                  <TextInput placeholder="Location" value={locationDropOff} onChangeText={setLocationDropOff} onFocus={() => setModalDropOffVisible(true)} style={styles.input} />
+                  <TouchableOpacity onPress={() => setModalDropOffVisible(true)}>
+                    <LocationIcon size={20} color={COLORS.text} /> 
+                  </TouchableOpacity>
+                  <TextInput 
+                    placeholder="Location" 
+                    value={locationDropOff} 
+                    onChangeText={setLocationDropOff} 
+                    style={styles.input} 
+                    editable={false}
+                    onPress={() => setModalDropOffVisible(true)}
+                  />
 
                   <Modal visible={modalDropOffVisible} animationType="slide">
                     <View style={{ flex: 1 }}>
                       {/* Map View */}
                       {mode === 'map' && (
                         <>
-                          {region && (
+                          {regionDropOff && (
                             <>
                             <MapView
                               style={{ flex: 1 }}
@@ -564,6 +655,14 @@ export default function HomeScreen() {
                             onChangeText={setLocationDropOff}
                             style={styles.manualInput}
                             multiline
+                            autoCapitalize="words"
+                            autoComplete="off"
+                            clearButtonMode="always"
+                            textContentType="fullStreetAddress"
+                            selectionColor={COLORS.primary}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleReturnKey}
                           />
                         </View>
                       )}
@@ -583,7 +682,11 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                       </View>
                       <View style={styles.footer}>
-                        <Button title="Use This Address" onPress={() => setModalDropOffVisible(false)} />
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 160, alignSelf: 'center'}]} 
+                          onPress={() => setModalDropOffVisible(false)}
+                        >
+                          <Text style={styles.toggleText}>Use This Address</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </Modal>
@@ -591,7 +694,16 @@ export default function HomeScreen() {
 
                 <Text style={styles.label}>More details</Text>
                 <View style={styles.inputContainer}>
-                  <TextInput placeholder="Write here..." value={detailsDropOff} onChangeText={setDetailsDropOff} style={styles.input} />
+                  <TextInput 
+                    placeholder="Write here..." 
+                    value={detailsDropOff} 
+                    onChangeText={setDetailsDropOff} 
+                    style={styles.input} 
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
+                  />
                 </View>
                 <TouchableOpacity style={[styles.loginButton, {marginTop: 35, marginBottom: 27}]} onPress={() => router.push('/(tabs)')}>
                   <Text style={styles.loginText}>Post Job</Text>
@@ -754,7 +866,8 @@ const styles = StyleSheet.create({
   toggleContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
     backgroundColor: '#f2f2f2',
   },
   toggleButton: {
@@ -782,18 +895,19 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: 'center',
+    backgroundColor: COLORS.backgroundWrapper,
   },
   manualInput: {
     height: 120,
-    borderWidth: 1,
-    borderColor: '#aaa',
-    borderRadius: 5,
+    borderRadius: 14,
     padding: 12,
     fontSize: 16,
     textAlignVertical: 'top',
+    backgroundColor: COLORS.background,
   },
   footer: {
     padding: 10,
+    marginBottom: 10,
   },
   modalBackground: {
     flex: 1,

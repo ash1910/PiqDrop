@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
@@ -39,22 +39,33 @@ const GENDERS = [
 ];
 
 export default function LoginScreen() {
-  const [rememberMe, setRememberMe] = React.useState(true);
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
-  const [nationality, setNationality] = React.useState('');
-  const [gender, setGender] = React.useState('');
-  const [showPicker, setShowPicker] = React.useState(false);
-  const [pickerType, setPickerType] = React.useState<'nationality' | 'gender'>('nationality');
-  const [isKeyboardVisible, setKeyboardVisible] = React.useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [nationality, setNationality] = useState('');
+  const [gender, setGender] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerType, setPickerType] = useState<'nationality' | 'gender'>('nationality');
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+  const firstNameInputRef = useRef<TextInput>(null);
+  const lastNameInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+  const confirmPasswordInputRef = useRef<TextInput>(null);
+  const nationalityInputRef = useRef<TextInput>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     StatusBar.setBarStyle('light-content');
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       () => {
@@ -152,28 +163,84 @@ export default function LoginScreen() {
           <Text style={styles.label}>First Name</Text>
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Name" style={styles.input} />
+            <TextInput 
+              ref={firstNameInputRef}
+              placeholder="Name" 
+              style={styles.input} 
+              value={firstName}
+              onChangeText={setFirstName}
+              autoComplete="name"
+              autoCorrect={false}
+              autoFocus={true}
+              clearButtonMode="always"
+              keyboardType="default"
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                lastNameInputRef.current?.focus();
+              }}
+            />
           </View>
 
           <Text style={styles.label}>Last Name</Text>
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Name" style={styles.input} />
+            <TextInput 
+              placeholder="Name" 
+              ref={lastNameInputRef}
+              style={styles.input} 
+              value={lastName}
+              onChangeText={setLastName}
+              autoComplete="name"
+              clearButtonMode="always"
+              keyboardType="default"
+              autoCorrect={false}
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                emailInputRef.current?.focus();
+              }}
+            />
           </View>
 
           <Text style={styles.label}>Email</Text>
           <View style={styles.inputContainer}>
             <LetterIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Email" style={styles.input} />
+            <TextInput 
+              placeholder="Email" 
+              ref={emailInputRef}
+              style={styles.input} 
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoComplete="off"
+              keyboardType="email-address"
+              clearButtonMode="always"
+              autoCorrect={false}
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                passwordInputRef.current?.focus();
+              }}
+            />
           </View>
 
           <Text style={styles.label}>Password</Text>
           <View style={styles.inputContainer}>
             <LockIcon size={20} color={COLORS.text} />
             <TextInput 
+              ref={passwordInputRef}
               placeholder="Password" 
-              secureTextEntry={!showPassword} 
               style={styles.input} 
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+              keyboardType="default"
+              autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
+              secureTextEntry={!showPassword}
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                confirmPasswordInputRef.current?.focus();
+              }}
             />
             <TouchableOpacity onPress={togglePasswordVisibility}>
               <Feather 
@@ -188,9 +255,16 @@ export default function LoginScreen() {
           <View style={styles.inputContainer}>
             <LockIcon size={20} color={COLORS.text} />
             <TextInput 
+              ref={confirmPasswordInputRef}
               placeholder="Confirm password" 
-              secureTextEntry={!showConfirmPassword} 
               style={styles.input} 
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              autoCapitalize="none"
+              autoComplete="off"
+              textContentType="none"
+              secureTextEntry={!showConfirmPassword}
+              returnKeyType="next"
             />
             <TouchableOpacity onPress={toggleConfirmPasswordVisibility}>
               <Feather 

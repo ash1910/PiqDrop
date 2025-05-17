@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Pressable } from 'react-native';
+import Modal from 'react-native-modal';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -31,7 +32,7 @@ const TAB_WIDTH = (screenWidth - 32 - 8) / TABS.length;
 
 const COLORS = {
   primary: '#55B086',
-  danger: '#FF693B',
+  danger: '#FF693B', 
   background: '#FFFFFF',
   backgroundWrapper: '#F5F5F5',
   buttonBackground: '#EEEEEE',
@@ -48,10 +49,14 @@ export default function ManageScreen() {
   const [modalFilterVisible, setModalFilterVisible] = useState(false);
   const [modalDeliveryCompletedVisible, setModalDeliveryCompletedVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-
+  const [modalCancelDeliveryVisible, setModalCancelDeliveryVisible] = useState(false);
+  const [shouldOpenSecond, setShouldOpenSecond] = useState(false);
+  const [shouldOpenThird, setShouldOpenThird] = useState(false);
 
   const [activeTab, setActiveTab] = useState(0);
   const translateX = useSharedValue(0);
+
+  const [filterBy, setFilterBy] = useState('deliveryDate');
 
   const handlePress = (index) => {
     setActiveTab(index);
@@ -184,25 +189,23 @@ export default function ManageScreen() {
             <SocialShareIcon size={44} />
           </TouchableOpacity>
           <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalFilterVisible}
-            onRequestClose={() => setModalVisible(false)}
+            isVisible={modalFilterVisible}  
+            onSwipeComplete={() => setModalFilterVisible(false)}
+            swipeDirection="down"
+            style={{ justifyContent: 'flex-end', margin: 0 }}
           >
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
-                <TouchableOpacity style={styles.modalOption} onPress={() => alert('Delivery date')}>
-                  <ProfileIcon size={20} color={COLORS.text} />
-                  <Text style={styles.modalOptionText}>Delivery date</Text>
+                <View style={styles.modalToggleButton}></View>
+                <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('deliveryDate')}>
+                  <ProfileIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
+                  <Text style={[styles.modalOptionText, {color: filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text}]}>Delivery date</Text>
+                  <SimpleCheckIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.modalOption} onPress={() => alert('Order date')}>
-                  <CalendarIcon size={20} color={COLORS.primary} />
-                  <Text style={[styles.modalOptionText, {color: COLORS.primary}]}>Order date</Text>
-                  <SimpleCheckIcon size={20} color={COLORS.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => setModalFilterVisible(false)}>
-                  <RoundedCrossIcon size={20} color='red' />
-                  <Text style={[styles.modalOptionText, { color: 'red' }]}>Close</Text>
+                <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('orderDate')}>
+                  <CalendarIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
+                  <Text style={[styles.modalOptionText, {color: filterBy === 'orderDate' ? COLORS.primary : COLORS.text}]}>Order date</Text>
+                  <SimpleCheckIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -418,41 +421,54 @@ export default function ManageScreen() {
             )}
 
             <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={() => setModalVisible(false)}
+              onSwipeComplete={() => setModalVisible(false)}
+              onModalHide={() => {
+                if (shouldOpenSecond) {
+                  setModalDeliveryCompletedVisible(true);
+                  setShouldOpenSecond(false); // reset flag
+                }
+                if (shouldOpenThird) {
+                  setModalCancelDeliveryVisible(true);
+                  setShouldOpenThird(false); // reset flag
+                }
+              }}
+              swipeDirection="down"
+              isVisible={modalVisible}
+              style={{ justifyContent: 'flex-end', margin: 0 }}
             >
               <View style={styles.modalContainer}>
                 <View style={styles.modalContent}>
+                  <View style={styles.modalToggleButton}></View>
                   <TouchableOpacity style={styles.modalOption} onPress={() => {
                     setModalVisible(false);
-                    setModalDeliveryCompletedVisible(true);
-                    }}>
+                    setShouldOpenSecond(true);
+                  }}>
                     <RoundedCheckIcon size={20} />
-                    <Text style={styles.modalOptionText}>Accept Delivery</Text>
+                    <Text style={styles.modalOptionText}>Complete Delivery</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.modalOption} onPress={() => alert('Cancelled')}>
+                  <TouchableOpacity style={styles.modalOption} onPress={() => {
+                    setModalVisible(false);
+                    setShouldOpenThird(true);
+                    }}>
                     <RoundedCrossIcon size={20} />
                     <Text style={styles.modalOptionText}>Cancel Delivery</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.modalOption} onPress={() => alert('Editing')}>
+                  <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
+                    setModalVisible(false);
+                    router.push('/(tabs)');
+                  }}>
                     <RoundedEditIcon size={20} />
                     <Text style={styles.modalOptionText}>Edit Delivery</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => setModalVisible(false)}>
-                    <RoundedCrossIcon size={20} color='red' />
-                    <Text style={[styles.modalOptionText, { color: 'red' }]}>Close</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </Modal>
 
             <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalDeliveryCompletedVisible}
-              onRequestClose={() => setModalDeliveryCompletedVisible(false)}
+              onSwipeComplete={() => setModalDeliveryCompletedVisible(false)}
+              swipeDirection="down"
+              isVisible={modalDeliveryCompletedVisible}
+              style={{ justifyContent: 'flex-end', margin: 0 }}
             >
               <View style={styles.modalDeliveryContainer}>
                 <View style={styles.modalDeliveryContent}>
@@ -470,6 +486,60 @@ export default function ManageScreen() {
                   <TouchableOpacity style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} onPress={() => setModalDeliveryCompletedVisible(false)}>
                     <Text style={[styles.loginText, {color: COLORS.text}]}>Maybe later</Text>
                   </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+
+            <Modal
+              onSwipeComplete={() => setModalCancelDeliveryVisible(false)}
+              swipeDirection="down"
+              isVisible={modalCancelDeliveryVisible}
+              style={{ justifyContent: 'flex-end', margin: 0 }}
+            >
+              <View style={styles.modalContainer}>
+                <View style={[styles.modalContent, {paddingBottom: 24}]}>
+                  <View style={[styles.modalToggleButton, {marginBottom: 24}]}></View>
+                  <Text style={styles.modalTitle}>Cancel Confirmation</Text>
+                  {/* Order Summary Card */}
+                  <View style={styles.orderSummaryCard}>
+                    <View style={styles.orderSummaryRow}>
+                      <View style={styles.orderSummaryUserRow}>
+                        <View style={styles.userAvatar} />
+                        <View style={styles.orderSummaryUserColumn}>
+                          <Text style={styles.orderSummaryUserName}>Marvin McKinney</Text>
+                          <View style={styles.orderSummaryPriceBox}>
+                            <Text style={styles.orderSummaryPrice}>$20.00</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.pickupDetailsRow}>
+                    <Text style={styles.pickupDetailsLabel}>From:</Text>
+                    <Text style={styles.pickupDetailsValue}>Germany, Berlin, Danziger Str.12A 10435, BE DEU</Text>
+                  </View>
+                  <View style={styles.pickupDetailsRow}>
+                    <Text style={styles.pickupDetailsLabel}>To:</Text>
+                    <Text style={styles.pickupDetailsValue}>Sweden, Gothenburg, Långströmsgatan 7, 41870.</Text>
+                  </View>
+                  <View style={styles.pickupDetailsRow}>
+                    <Text style={styles.pickupDetailsLabel}>Date:</Text>
+                    <Text style={styles.pickupDetailsValue}>11 apr 2025</Text>
+                  </View>
+
+                  <View style={styles.modalButtonContainer}>
+                    <TouchableOpacity style={[styles.modalButton, {backgroundColor: '#E6E6E6'}]} onPress={() => setModalCancelDeliveryVisible(false)}>
+                      <Text style={[styles.modalButtonText, {color: COLORS.text}]}>Back</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalButton, { marginBottom: 14, backgroundColor: COLORS.danger}]} onPress={() => {
+                      setModalCancelDeliveryVisible(false);
+                      handlePress(3);
+                    }}>
+                      <Text style={styles.modalButtonText}>Yes Cancel !</Text>
+                    </TouchableOpacity>
+                  </View>
+
                 </View>
               </View>
             </Modal>
@@ -702,8 +772,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 33,
     borderTopRightRadius: 33,
     paddingHorizontal: 30,
-    paddingTop: 37,
+    paddingTop: 8,
     paddingBottom: 46,
+  },
+  modalToggleButton: {
+    width: 50,
+    height: 5,
+    backgroundColor: '#E3E6EC',
+    borderRadius: 16,
+    marginBottom: 36,
+    alignSelf: 'center',
   },
   modalOption: {
     borderBottomWidth: 1,
@@ -791,5 +869,121 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: COLORS.text,
     marginBottom: 18,
+  },
+  modalTitle: {
+    fontFamily: 'nunito-extrabold',
+    fontSize: 18,
+    color: COLORS.text,
+    letterSpacing: 0.2,
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  modalButtonContainer: {
+    paddingTop: 40,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    height: 54,
+    padding: 10,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  modalButtonText: {
+    color: COLORS.buttonText,
+    fontFamily: 'nunito-bold',
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  orderSummaryCard: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    paddingBottom: 8,
+    marginBottom: 24,
+  },
+  orderSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  orderSummaryUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#D9D9D9',
+    marginRight: 14,
+  },
+  orderSummaryUserColumn: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  orderSummaryUserName: {
+    fontFamily: 'nunito-bold',
+    fontSize: 16,
+    letterSpacing: 0.2,
+    color: COLORS.text,
+  },
+  orderSummaryPriceBox: {
+    backgroundColor: '#EEEEEE',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  orderSummaryPrice: {
+    fontFamily: 'nunito-bold',
+    fontSize: 14,
+    letterSpacing: 0.2,
+    color: COLORS.text,
+  },
+  pickupDetailsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    marginBottom: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 24,
+  },
+  pickupDetailsTitle: {
+    fontFamily: 'nunito-bold',
+    fontSize: 16,
+    color: COLORS.text,
+    letterSpacing: 0.2,
+    marginBottom: 8,
+    marginLeft: 8,
+  },
+  pickupDetailsDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    marginBottom: 16,
+  },
+  pickupDetailsRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  pickupDetailsLabel: {
+    fontFamily: 'nunito-regular',
+    fontSize: 14,
+    letterSpacing: 0.2,
+    lineHeight: 20,
+    color: COLORS.subtitle,
+    width: 90,
+  },
+  pickupDetailsValue: {
+    color: COLORS.text,
+    fontFamily: 'nunito-bold',
+    fontSize: 14,
+    letterSpacing: 0.2,
+    lineHeight: 20,
+    flex: 1,
+    textAlign: 'right',
   },
 });
