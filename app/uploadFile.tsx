@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -10,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { AddIcon } from '@/components/icons/AddIcon';
+import api from '@/services/api';
 
 const HEADER_HEIGHT = 207;
 
@@ -29,6 +32,8 @@ export default function UploadFileScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [idCardImage, setIdCardImage] = useState<string | null>(null);
   const [showImageOptions, setShowImageOptions] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isLoadingId, setIsLoadingId] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -66,6 +71,89 @@ export default function UploadFileScreen() {
     };
   }, []);
 
+  const compressImage = async (uri: string): Promise<string> => {
+    try {
+      // Get file info
+      const fileInfo = await FileSystem.getInfoAsync(uri, { size: true });
+      
+      if (!fileInfo.exists) {
+        throw new Error("File does not exist");
+      }
+
+      // Convert size to MB
+      const fileSizeInMB = (fileInfo as FileSystem.FileInfo).size / (1024 * 1024);
+      console.log('Original image size:', fileSizeInMB, 'MB');
+
+      if (fileSizeInMB <= 2) {
+        return uri; // If image is already under 2MB, return as is
+      }
+
+      // Calculate compression quality based on file size
+      // The larger the file, the more we compress
+      let quality = Math.min(0.9, 2 / fileSizeInMB);
+      
+      // Compress and resize the image
+      const manipResult = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1200 } }], // Resize to reasonable dimensions
+        {
+          compress: quality,
+          format: SaveFormat.JPEG
+        }
+      );
+
+      // Verify the new file size
+      const compressedInfo = await FileSystem.getInfoAsync(manipResult.uri, { size: true });
+      const compressedSize = (compressedInfo as FileSystem.FileInfo).size / (1024 * 1024);
+      console.log('Compressed image size:', compressedSize, 'MB');
+
+      return manipResult.uri;
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      throw error;
+    }
+  };
+
+  const uploadImage = async (imageUri: string, type: 'profile' | 'id_card') => {
+    try {
+      // Compress image before upload
+      const compressedUri = await compressImage(imageUri);
+      
+      const formData = new FormData();
+      formData.append('image', {
+        uri: compressedUri,
+        type: 'image/jpeg',
+        name: `${type}_${Date.now()}.jpg`
+      } as any);
+      formData.append('type', type === 'profile' ? 'image' : 'document');
+
+      const response = await api.post('/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error(`Error uploading ${type} image:`, error);
+      let errorMessage = `Failed to upload ${type} image. Please try again.`;
+      
+      if (error?.response?.data?.errors) {
+        // Convert validation errors object to readable message
+        const errors = error.response.data.errors;
+        errorMessage = Object.keys(errors)
+          .map(key => errors[key].join('\n'))
+          .join('\n');
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
+    }
+  };
+
   const takePicture = async () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
@@ -76,15 +164,23 @@ export default function UploadFileScreen() {
       });
 
       if (!result.canceled) {
-        setProfileImage(result.assets[0].uri);
+        setIsLoadingProfile(true);
+        try {
+          await uploadImage(result.assets[0].uri, 'profile');
+          setProfileImage(result.assets[0].uri);
+        } catch (error: any) {
+          Alert.alert('Error', error.message);
+        } finally {
+          setIsLoadingProfile(false);
+        }
       }
     } catch (error) {
       console.error('Error taking picture:', error);
+      Alert.alert('Error', 'Failed to take picture. Please try again.');
     }
   };
 
   const pickImage = async () => {
-    console.log('pickImage');
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
@@ -94,11 +190,20 @@ export default function UploadFileScreen() {
       });
 
       if (!result.canceled) {
-        setIdCardImage(result.assets[0].uri);
+        setIsLoadingId(true);
+        try {
+          await uploadImage(result.assets[0].uri, 'id_card');
+          setIdCardImage(result.assets[0].uri);
+        } catch (error: any) {
+          Alert.alert('Error', error.message);
+        } finally {
+          setIsLoadingId(false);
+        }
       }
       setShowImageOptions(false);
     } catch (error) {
       console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
       setShowImageOptions(false);
     }
   };
@@ -113,11 +218,20 @@ export default function UploadFileScreen() {
       });
 
       if (!result.canceled) {
-        setIdCardImage(result.assets[0].uri);
+        setIsLoadingId(true);
+        try {
+          await uploadImage(result.assets[0].uri, 'id_card');
+          setIdCardImage(result.assets[0].uri);
+        } catch (error: any) {
+          Alert.alert('Error', error.message);
+        } finally {
+          setIsLoadingId(false);
+        }
       }
       setShowImageOptions(false);
     } catch (error) {
       console.error('Error taking picture:', error);
+      Alert.alert('Error', 'Failed to take picture. Please try again.');
       setShowImageOptions(false);
     }
   };
@@ -146,8 +260,11 @@ export default function UploadFileScreen() {
           <TouchableOpacity 
             style={styles.inputContainer}
             onPress={() => setShowImageOptions(true)}
+            disabled={isLoadingId}
           >
-            {idCardImage ? (
+            {isLoadingId ? (
+              <ActivityIndicator color={COLORS.primary} />
+            ) : idCardImage ? (
               <Image source={{ uri: idCardImage }} style={styles.idCardImage} />
             ) : (
               <>
@@ -162,8 +279,11 @@ export default function UploadFileScreen() {
           <TouchableOpacity 
             style={styles.inputContainer}
             onPress={takePicture}
+            disabled={isLoadingProfile}
           >
-            {profileImage ? (
+            {isLoadingProfile ? (
+              <ActivityIndicator color={COLORS.primary} />
+            ) : profileImage ? (
               <Image source={{ uri: profileImage }} style={styles.profileImage} />
             ) : (
               <>
@@ -189,7 +309,13 @@ export default function UploadFileScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.push('/success')}
+            onPress={() => {
+              if (!profileImage || !idCardImage) {
+                Alert.alert('Error', 'Please upload both ID document and profile picture');
+                return;
+              }
+              router.push('/success');
+            }}
           >
             <Text style={styles.continueButtonText}>Tap to continue</Text>
           </TouchableOpacity>
@@ -360,5 +486,8 @@ const styles = StyleSheet.create({
     fontFamily: 'nunito-bold',
     color: 'red',
     textAlign: 'center',
+  },
+  continueButtonDisabled: {
+    opacity: 0.7,
   },
 });

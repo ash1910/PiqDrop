@@ -73,7 +73,7 @@ export default function SuccessScreen() {
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.continueButton}
-              onPress={() => router.push('/uploadFile')}
+              onPress={() => router.replace('/uploadFile')}
             >
               <Text style={styles.continueButtonText}>Tap to continue</Text>
             </TouchableOpacity>
@@ -85,7 +85,7 @@ export default function SuccessScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.push('/uploadFile')}
+            onPress={() => router.replace('/uploadFile')}
           >
             <Text style={styles.continueButtonText}>Tap to continue</Text>
           </TouchableOpacity>

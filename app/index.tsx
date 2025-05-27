@@ -29,7 +29,17 @@ export default function WelcomeScreen() {
         
         if (isAuthenticated) {
           // User is authenticated and has remember me enabled
-          router.replace('/(tabs)');
+          const user = await authService.getCurrentUser();
+
+          if( user.is_verified == 0 ) {
+            router.replace('/otpVerification', { email: user.email });
+          }
+          else if( user.image == null || user.document == null ) {
+            router.replace('/uploadFile');
+          }
+          else {
+            router.replace('/(tabs)');
+          }
         } else {
           // User needs to go through onboarding
           router.replace('/getStarted');

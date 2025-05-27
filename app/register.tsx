@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,6 +16,7 @@ import { Picker } from '@react-native-picker/picker';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 import { COUNTRIES } from '@/components/countries';
+import { authService } from '@/services/auth.service';
 
 const HEADER_HEIGHT = 207;
 
@@ -52,6 +53,7 @@ export default function LoginScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [pickerType, setPickerType] = useState<'nationality' | 'gender'>('nationality');
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const firstNameInputRef = useRef<TextInput>(null);
@@ -137,6 +139,140 @@ export default function LoginScreen() {
 
   const getSelectedValue = () => {
     return pickerType === 'nationality' ? nationality : gender;
+  };
+
+  const validateForm = () => {
+    const errors = [];
+
+    if (!firstName.trim()) {
+      errors.push('- First name is required');
+    }
+    if (!lastName.trim()) {
+      errors.push('- Last name is required');
+    }
+    if (!email.trim()) {
+      errors.push('- Email is required');
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.push('- Please enter a valid email address');
+    }
+    if (!password) {
+      errors.push('- Password is required');
+    } else {
+      // Validate password requirements
+      if (password.length < 8) {
+        errors.push('- Password must be at least 8 characters long');
+      }
+      if (!/[A-Z]/.test(password)) {
+        errors.push('- Password must contain at least one uppercase letter');
+      }
+      if (!/[a-z]/.test(password)) {
+        errors.push('- Password must contain at least one lowercase letter');
+      }
+      if (!/[0-9]/.test(password)) {
+        errors.push('- Password must contain at least one number');
+      }
+    }
+    if (password !== confirmPassword) {
+      errors.push('- Passwords do not match');
+    }
+    if (!nationality) {
+      errors.push('- Nationality is required');
+    }
+    if (!gender) {
+      errors.push('- Gender is required');
+    }
+
+    if (errors.length > 0) {
+      Alert.alert(
+        'Validation Error',
+        'Please fix the following errors:\n' + errors.join('\n')
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const handleRegister = async () => {
+    try {
+      console.log('Starting registration process...');
+      setIsLoading(true);
+      
+      if (!validateForm()) {
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Making registration request...');
+      const response = await authService.register({ 
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+        password,
+        password_confirmation: confirmPassword,
+        nationality,
+        gender,
+        role: 'sender'
+      });
+      
+      console.log('Registration successful:', response);
+
+      // Navigate to OTP verification
+      Alert.alert('Registration successful', 'Please check your email for OTP verification');
+      router.replace({
+        pathname: '/otpVerification',
+        params: { email: email.trim() }
+      });
+    } catch (err: any) {
+      console.error('Registration error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+
+      // Handle specific error cases
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Connection timed out. Please check your internet connection and try again.';
+      } else if (err.response?.status === 422) {
+        // Handle validation errors from the API
+        const validationErrors: string[] = [];
+        
+        // Get errors from response data
+        const responseData = err.response.data;
+        console.log('Validation Response Data:', responseData);
+
+        if (responseData?.errors && typeof responseData.errors === 'object') {
+          // Loop through each error field
+          Object.entries(responseData.errors).forEach(([field, fieldErrors]) => {
+            // Handle both array and string error messages
+            if (Array.isArray(fieldErrors)) {
+              fieldErrors.forEach(error => {
+                validationErrors.push(`- ${error}`);
+              });
+            } else if (typeof fieldErrors === 'string') {
+              validationErrors.push(`- ${fieldErrors}`);
+            }
+          });
+
+          console.log('Parsed Validation Errors:', validationErrors);
+          errorMessage = validationErrors.join('\n');
+        } else {
+          errorMessage = responseData?.message || 'Invalid registration data';
+        }
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else {
+        errorMessage = err.message || 'Registration failed. Please try again.';
+      }
+
+      Alert.alert(
+        'Registration Error',
+        errorMessage
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -325,16 +461,32 @@ export default function LoginScreen() {
         </View>
         {isKeyboardVisible && (
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/otpVerification')}>
-              <Text style={styles.loginText}>Sign up</Text>
+            <TouchableOpacity 
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+              onPress={handleRegister}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={COLORS.buttonText} />
+              ) : (
+                <Text style={styles.loginText}>Sign up</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
       </Animated.ScrollView>
       {!isKeyboardVisible && (
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/otpVerification')}>
-            <Text style={styles.loginText}>Sign up</Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.buttonText} />
+            ) : (
+              <Text style={styles.loginText}>Sign up</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -508,5 +660,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'nunito-bold',
     color: COLORS.text,
+  },
+  errorContainer: {
+    marginHorizontal: 16,
+    marginTop: 10,
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontFamily: 'nunito-medium',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
 });

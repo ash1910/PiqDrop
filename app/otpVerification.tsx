@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -8,6 +8,7 @@ import Animated, {
   useScrollViewOffset,
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
+import { authService } from '@/services/auth.service';
 
 const HEADER_HEIGHT = 207;
 
@@ -23,10 +24,13 @@ const COLORS = {
 };
 
 export default function OTPVerificationScreen() {
+  const params = useLocalSearchParams();
+  const email = params.email as string;
   const [otp, setOtp] = useState(['', '', '', '']);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -82,9 +86,73 @@ export default function OTPVerificationScreen() {
     }
   };
 
-  const handleResend = () => {
-    setTimeLeft(30);
-    // Add your resend OTP logic here
+  const handleResend = async () => {
+    try {
+      setIsLoading(true);
+      await authService.resendOtp(email);
+      
+      // Clear all OTP fields
+      setOtp(['', '', '', '']);
+      
+      // Focus on first input field
+      setTimeout(() => {
+        if (inputRefs.current[0]) {
+          inputRefs.current[0].focus();
+        }
+      }, 100);
+
+      setTimeLeft(60);
+      Alert.alert('Success', 'OTP has been resent to your email');
+    } catch (err: any) {
+      let errorMessage = 'Failed to resend OTP. Please try again.';
+      
+      // Handle Axios error response
+      if (err?.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      const otpCode = otp.join('');
+      if (otpCode.length !== 4) {
+        Alert.alert('Error', 'Please enter a valid 4-digit OTP');
+        return;
+      }
+
+      setIsLoading(true);
+      const response = await authService.verifyOtp(email, otpCode);
+      
+      console.log('OTP verification successful:', response);
+      //Alert.alert('OTP verification successful', 'Please login to continue');
+      router.replace('/success');
+    } catch (err: any) {
+      console.error('OTP verification error:', err);
+
+      let errorMessage = 'OTP verification failed. Please try again.';
+      
+      // Handle Axios error response
+      if (err?.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      Alert.alert('Verification Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -104,7 +172,7 @@ export default function OTPVerificationScreen() {
           </TouchableOpacity>
           <Image source={require('@/assets/img/otp-bg.png')} style={styles.logo} />
           <Text style={styles.appName}>OTP Verification</Text>
-          <Text style={styles.tagline}>Please enter the One-Time Password (OTP) {'\n'}sent to your registered number.</Text>
+          <Text style={styles.tagline}>Please enter the One-Time Password (OTP) {'\n'}sent to {email}</Text>
         </Animated.View>
 
         <View style={styles.form}>
@@ -112,7 +180,11 @@ export default function OTPVerificationScreen() {
             {otp.map((digit, index) => (
               <TextInput
                 key={index}
-                ref={ref => inputRefs.current[index] = ref}
+                ref={ref => {
+                  if (ref) {
+                    inputRefs.current[index] = ref;
+                  }
+                }}
                 style={[
                   styles.otpInput,
                   focusedIndex === index && styles.otpInputFocused
@@ -124,6 +196,7 @@ export default function OTPVerificationScreen() {
                 onKeyPress={e => handleKeyPress(e, index)}
                 onFocus={() => setFocusedIndex(index)}
                 onBlur={() => setFocusedIndex(null)}
+                editable={!isLoading}
               />
             ))}
           </View>
@@ -131,8 +204,14 @@ export default function OTPVerificationScreen() {
           <View style={styles.resendContainer}>
             <Text style={styles.resendText}>Didn't receive any code?</Text>
             <View style={styles.resendLinkContainer}>
-              <TouchableOpacity onPress={handleResend} disabled={timeLeft > 0}>
-                <Text style={[styles.resendLink, timeLeft > 0 && styles.resendLinkDisabled]}>
+              <TouchableOpacity 
+                onPress={handleResend} 
+                disabled={timeLeft > 0 || isLoading}
+              >
+                <Text style={[
+                  styles.resendLink, 
+                  (timeLeft > 0 || isLoading) && styles.resendLinkDisabled
+                ]}>
                   Resend
                 </Text>
               </TouchableOpacity>
@@ -145,14 +224,15 @@ export default function OTPVerificationScreen() {
         {isKeyboardVisible && (
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={styles.continueButton}
-              onPress={() => {
-                // Add your verification logic here
-                console.log('OTP:', otp.join(''));
-                router.push('/success');
-              }}
+              style={[styles.continueButton, isLoading && styles.continueButtonDisabled]}
+              onPress={handleVerifyOtp}
+              disabled={isLoading}
             >
-              <Text style={styles.continueButtonText}>Tap to continue</Text>
+              {isLoading ? (
+                <ActivityIndicator color={COLORS.buttonText} />
+              ) : (
+                <Text style={styles.continueButtonText}>Verify OTP</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -161,14 +241,15 @@ export default function OTPVerificationScreen() {
       {!isKeyboardVisible && (
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
-            style={styles.continueButton}
-            onPress={() => {
-              // Add your verification logic here
-              console.log('OTP:', otp.join(''));
-              router.push('/success');
-            }}
+            style={[styles.continueButton, isLoading && styles.continueButtonDisabled]}
+            onPress={handleVerifyOtp}
+            disabled={isLoading}
           >
-            <Text style={styles.continueButtonText}>Tap to continue</Text>
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.buttonText} />
+            ) : (
+              <Text style={styles.continueButtonText}>Verify OTP</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -295,5 +376,8 @@ const styles = StyleSheet.create({
     fontFamily: 'nunito-bold',
     fontSize: 16,
     letterSpacing: 0.2,
+  },
+  continueButtonDisabled: {
+    opacity: 0.7,
   },
 });

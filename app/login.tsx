@@ -97,7 +97,15 @@ export default function LoginScreen() {
         user: response.user ? 'exists' : 'missing'
       });
 
-      router.replace('/(tabs)');
+      if( response.user.is_verified == 0 ) {
+        router.replace('/otpVerification', { email: response.user.email });
+      }
+      else if( response.user.image == null || response.user.document == null ) {
+        router.replace('/uploadFile');
+      }
+      else {
+        router.replace('/(tabs)');
+      }
     } catch (err: any) {
       console.error('Login error:', {
         message: err.message,

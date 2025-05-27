@@ -9,10 +9,14 @@ interface LoginCredentials {
 }
 
 interface RegisterData {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
   password_confirmation: string;
+  nationality: string;
+  gender: string;
+  role?: string;
 }
 
 interface ForgotPasswordData {
@@ -42,8 +46,7 @@ interface LoginResponse {
     nationality: string;
     date_of_birth: string | null;
     document: string | null;
-    created_at: string;
-    updated_at: string;
+    is_verified: number;
   };
 }
 
@@ -89,31 +92,46 @@ class AuthService {
         }
       });
 
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Login request timed out. Please try again.');
-      }
-
-      throw new Error(
-        error.response?.data?.message || 
-        error.response?.data?.error || 
-        error.message || 
-        'Login failed. Please try again.'
-      );
+      throw error;
     }
   }
 
   async register(data: RegisterData) {
+    console.log('Register Request:', { 
+      url: '/register',
+      data: { ...data, password: '****', password_confirmation: '****' } 
+    });
+
     try {
-      const response = await api.post('/register', data);
-      const { token, user } = response.data;
+      const response = await api.post('/register', data, {
+        timeout: 30000, // 30 seconds timeout
+      });
       
-      // Store the token
-      await AsyncStorage.setItem('auth_token', token);
+      console.log('Register Response:', {
+        status: response.status,
+        data: response.data
+      });
+
+      const { token : access_token, user } = response.data?.data;
+      
+      // Store the token with Bearer prefix
+      await AsyncStorage.setItem('auth_token', `Bearer ${access_token}`);
       await AsyncStorage.setItem('user', JSON.stringify(user));
-      
+
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
+      console.error('Register Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          timeout: error.config?.timeout
+        }
+      });
+
+      throw error;
     }
   }
 
@@ -122,7 +140,8 @@ class AuthService {
       const response = await api.post('/verify-otp', { email, otp });
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'OTP verification failed');
+      console.error('API Response Error:', error);
+      throw error;
     }
   }
 
@@ -131,7 +150,8 @@ class AuthService {
       const response = await api.post('/resend-otp', { email });
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to resend OTP');
+      console.error('Resend OTP Error:', error);
+      throw error;
     }
   }
 
@@ -140,7 +160,8 @@ class AuthService {
       const response = await api.post('/forgot-password', data);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to send reset password link');
+      console.error('Forgot Password Error:', error);
+      throw error;
     }
   }
 
@@ -149,7 +170,8 @@ class AuthService {
       const response = await api.post('/reset-password', data);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to reset password');
+      console.error('Reset Password Error:', error);
+      throw error;
     }
   }
 
@@ -163,20 +185,12 @@ class AuthService {
       await AsyncStorage.multiRemove(['auth_token', 'user', 'remember_me']);
       console.log('Local storage cleared');
     } catch (error: any) {
-      console.error('Logout Error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      console.error('Logout Error:', error);
       
       // Even if the API call fails, clear local storage
       await AsyncStorage.multiRemove(['auth_token', 'user', 'remember_me']);
       
-      throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'Logout failed. Please try again.'
-      );
+      throw error;
     }
   }
 
@@ -184,8 +198,9 @@ class AuthService {
     try {
       const userStr = await AsyncStorage.getItem('user');
       return userStr ? JSON.parse(userStr) : null;
-    } catch (error) {
-      return null;
+    } catch (error: any) {
+      console.error('Get Current User Error:', error);
+      throw error;
     }
   }
 
@@ -199,8 +214,9 @@ class AuthService {
       }
       
       return !!token[0];
-    } catch (error) {
-      return false;
+    } catch (error: any) {
+      console.error('Is Authenticated Error:', error);
+      throw error;
     }
   }
 }
