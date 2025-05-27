@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { LockIcon } from '@/components/icons/LockIcon';
 import { PhoneIcon } from '@/components/icons/PhoneIcon';
 import { FacebookIcon } from '@/components/icons/FacebookIcon';
 import { GoogleIcon } from '@/components/icons/GoogleIcon';
+import { authService } from '@/services/auth.service';
 
 const HEADER_HEIGHT = 230;
 
@@ -35,6 +36,8 @@ export default function LoginScreen() {
   const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(true);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const passwordInputRef = useRef<TextInput>(null);
@@ -64,6 +67,59 @@ export default function LoginScreen() {
     setShowPassword(!showPassword);
   };
 
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    try {
+      console.log('Starting login process...');
+      setIsLoading(true);
+      setError(null);
+
+      console.log('Validating email format...');
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      console.log('Making login request...', { email, password: '****' });
+      const response = await authService.login({ 
+        email: email.trim(), 
+        password,
+        role: 'sender',
+        remember: rememberMe
+      });
+      
+      console.log('Login successful:', { 
+        token: response.access_token ? 'exists' : 'missing',
+        user: response.user ? 'exists' : 'missing'
+      });
+
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      console.error('Login error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+
+      // Handle specific error cases
+      if (err.code === 'ECONNABORTED') {
+        setError('Connection timed out. Please check your internet connection and try again.');
+      } else if (err.response?.status === 401 || err.response?.status === 422) {
+        setError(err.response.data.message || 'Invalid email or password');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -81,6 +137,10 @@ export default function LoginScreen() {
         <View style={styles.form}>
           <Text style={styles.title}>Login</Text>
           <Text style={styles.subtitle}>Access your account to continue</Text>
+
+          {error && (
+            <Text style={styles.errorText}>{error}</Text>
+          )}
 
           <Text style={styles.label}>Email</Text>
           <View style={styles.inputContainer}>
@@ -138,8 +198,16 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/(tabs)')}>
-            <Text style={styles.loginText}>Login</Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.buttonText} />
+            ) : (
+              <Text style={styles.loginText}>Login</Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.dividerRow}>
@@ -333,5 +401,15 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontFamily: 'nunito-bold',
     fontSize: 14,
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontFamily: 'nunito-medium',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
 });

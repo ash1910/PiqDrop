@@ -4,11 +4,12 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { router } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import React, { useEffect } from 'react'; 
+import React, { useEffect } from 'react';
+
 const { width, height } = Dimensions.get('window');
 const HEADER_DELIVERY_HEIGHT = height / 100 * 25;
 
-export default function WelcomeScreen() {
+export default function GetStartedScreen() {
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
   }, []);

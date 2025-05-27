@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { LetterIcon } from '@/components/icons/LetterIcon';
+import { authService } from '@/services/auth.service';
 
 const COLORS = {
   primary: '#55B086',
@@ -23,6 +24,8 @@ const COLORS = {
 
 export default function ForgotPasswordScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
 
@@ -50,6 +53,37 @@ export default function ForgotPasswordScreen() {
     };
   }, []);
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await authService.forgotPassword({ email: email.trim() });
+      Alert.alert(
+        'Success',
+        'Password reset token has been sent to your email',
+        [{ text: 'OK', onPress: () => router.push({ pathname: '/resetPassword', params: { email: email.trim() } }) }]
+      );
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to send reset token. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -71,32 +105,31 @@ export default function ForgotPasswordScreen() {
           <Text style={styles.label}>Email</Text> 
           <View style={styles.inputContainer}> 
             <LetterIcon size={20} color={COLORS.text} />
-            <TextInput placeholder="Enter Email" style={styles.input} keyboardType="email-address" /> 
+            <TextInput 
+              placeholder="Enter Email" 
+              style={styles.input} 
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+            /> 
           </View>
-          <Text style={styles.labelSubtitle}>Enter the email associated with your account.{'\n'}we'll send you a link  to help you log back in.</Text>
+          <Text style={styles.labelSubtitle}>Enter the email associated with your account.{'\n'}we'll send you a token to help you reset your password.</Text>
         </View>
-        {isKeyboardVisible && (
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.continueButton}
-              onPress={() => router.push('/otpVerification')}
+              onPress={handleForgotPassword}
+              disabled={isLoading}
             >
-              <Text style={styles.continueButtonText}>Send OTP</Text>
+              {isLoading ? (
+                <ActivityIndicator color={COLORS.buttonText} />
+              ) : (
+                <Text style={styles.continueButtonText}>Send Token</Text>
+              )}
             </TouchableOpacity>
           </View>
-        )}
       </Animated.ScrollView>
-
-      {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={styles.continueButton}
-            onPress={() => router.push('/otpVerification')}
-          >
-            <Text style={styles.continueButtonText}>Send OTP</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </KeyboardAvoidingView>
   );
 }

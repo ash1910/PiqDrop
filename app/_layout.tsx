@@ -23,7 +23,18 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      const hideSplash = async () => {
+        // Create a promise that resolves after 2 seconds
+        const delay = new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Wait for both the delay and any other setup to complete
+        await Promise.all([delay]);
+        
+        // Hide the splash screen
+        await SplashScreen.hideAsync();
+      };
+      
+      hideSplash();
     }
   }, [loaded]);
 
@@ -41,6 +52,7 @@ export default function RootLayout() {
         <Stack.Screen name="otpVerification" options={{ headerShown: false }} />
         <Stack.Screen name="success" options={{ headerShown: false }} />
         <Stack.Screen name="forgotPassword" options={{ headerShown: false }} />
+        <Stack.Screen name="resetPassword" options={{ headerShown: false }} />
         <Stack.Screen name="accountRecovery" options={{ headerShown: false }} />
         <Stack.Screen name="uploadFile" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

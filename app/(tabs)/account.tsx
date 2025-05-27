@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Share, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Share, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -28,6 +28,7 @@ import { EditIcon } from '@/components/icons/EditIcon';
 import { LocationIcon } from '@/components/icons/LocationIcon';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { authService } from '@/services/auth.service';
 
 const HEADER_HEIGHT = 156;
 const { width } = Dimensions.get('window');
@@ -86,6 +87,7 @@ export default function AccountScreen() {
   });
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -433,12 +435,30 @@ export default function AccountScreen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.modalButtonConfirm]} 
-                onPress={() => {
-                  setShowLogoutModal(false);
-                  router.replace('/login');
+                onPress={async () => {
+                  try {
+                    setIsLoggingOut(true);
+                    await authService.logout();
+                    setShowLogoutModal(false);
+                    router.replace('/login');
+                  } catch (error: any) {
+                    console.error('Logout failed:', error);
+                    Alert.alert(
+                      'Logout Failed',
+                      error.message || 'Something went wrong. Please try again.',
+                      [{ text: 'OK' }]
+                    );
+                  } finally {
+                    setIsLoggingOut(false);
+                  }
                 }}
+                disabled={isLoggingOut}
               >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Logout</Text>
+                {isLoggingOut ? (
+                  <ActivityIndicator color={COLORS.buttonText} />
+                ) : (
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Logout</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

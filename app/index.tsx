@@ -1,26 +1,65 @@
-import { View, Text, Image, StyleSheet, Dimensions, StatusBar } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator } from 'react-native';
 import ParallaxScrollViewNormal from '@/components/ParallaxScrollViewNormal';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { router } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { authService } from '@/services/auth.service';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_DELIVERY_HEIGHT = height / 100 * 22;
 
 export default function WelcomeScreen() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [showContent, setShowContent] = useState(true);
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace('/getStarted');
-    }, 3000);
+    const checkAuth = async () => {
+      try {
+        const isAuthenticated = await authService.isAuthenticated();
+        
+        // Show the welcome content for 3 seconds
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        setShowContent(false);
+        
+        if (isAuthenticated) {
+          // User is authenticated and has remember me enabled
+          router.replace('/(tabs)');
+        } else {
+          // User needs to go through onboarding
+          router.replace('/getStarted');
+        }
+      } catch (error) {
+        console.error('Initial auth check failed:', error);
+        router.replace('/getStarted');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    checkAuth();
   }, []);
+
+  if (!showContent) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Image
+          source={require('@/assets/images/icon.png')}
+          style={styles.loadingLogo}
+        />
+        <ActivityIndicator 
+          size="large" 
+          color="#55B086" 
+          style={styles.loadingSpinner}
+        />
+      </View>
+    );
+  }
 
   return (
     <ParallaxScrollViewNormal
@@ -45,6 +84,21 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingLogo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+    marginBottom: 24,
+  },
+  loadingSpinner: {
+    marginTop: 20,
+  },
   headerImage: {
     height: HEADER_DELIVERY_HEIGHT,
     width: '100%',
