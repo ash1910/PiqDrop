@@ -188,7 +188,7 @@ export default function UploadFileScreen() {
         aspect: [1, 1],
         quality: 1,
       });
-
+      setShowImageOptions(false);
       if (!result.canceled) {
         setIsLoadingId(true);
         try {
@@ -200,7 +200,6 @@ export default function UploadFileScreen() {
           setIsLoadingId(false);
         }
       }
-      setShowImageOptions(false);
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
@@ -216,7 +215,7 @@ export default function UploadFileScreen() {
         aspect: [1, 1],
         quality: 1,
       });
-
+      setShowImageOptions(false);
       if (!result.canceled) {
         setIsLoadingId(true);
         try {
@@ -228,7 +227,7 @@ export default function UploadFileScreen() {
           setIsLoadingId(false);
         }
       }
-      setShowImageOptions(false);
+      
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture. Please try again.');
