@@ -219,6 +219,32 @@ class AuthService {
       throw error;
     }
   }
+
+  async updateUserImage(imageUrl: string) {
+    try {
+      const user = await this.getCurrentUser();
+      if (user) {
+        user.image = imageUrl;
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (error) {
+      console.error('Update User Image Error:', error);
+      throw error;
+    }
+  }
+
+  async updateUserDocument(documentUrl: string) {
+    try {
+      const user = await this.getCurrentUser();
+      if (user) {
+        user.document = documentUrl;
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (error) {
+      console.error('Update User Document Error:', error);
+      throw error;
+    }
+  }
 }
 
 export const authService = new AuthService(); 

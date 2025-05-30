@@ -37,6 +37,10 @@ export default function OTPVerificationScreen() {
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
+    // Focus on first input field
+    if (inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+    }
   }, []);
 
   useEffect(() => {
@@ -167,7 +171,7 @@ export default function OTPVerificationScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={styles.header}>
-          <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.leftArrow} onPress={() => router.replace('/login')}>
             <LeftArrowIcon size={44} color={"#212121"} />
           </TouchableOpacity>
           <Image source={require('@/assets/img/otp-bg.png')} style={styles.logo} />

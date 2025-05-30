@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator, Alert } from 'react-native';
 import ParallaxScrollViewNormal from '@/components/ParallaxScrollViewNormal';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -32,10 +32,10 @@ export default function WelcomeScreen() {
           const user = await authService.getCurrentUser();
 
           if( user.is_verified == 0 ) {
-            router.replace('/otpVerification', { email: user.email });
+            router.replace('/login');
           }
           else if( user.image == null || user.document == null ) {
-            router.replace('/uploadFile');
+            router.replace('/login');
           }
           else {
             router.replace('/(tabs)');

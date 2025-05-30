@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator, Alert } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
@@ -98,9 +98,22 @@ export default function LoginScreen() {
       });
 
       if( response.user.is_verified == 0 ) {
-        router.replace('/otpVerification', { email: response.user.email });
+        console.log('User is not verified');
+        console.log(response.user.email);
+        try {
+          await authService.resendOtp(response.user.email);
+          Alert.alert('Your account is not verified. Please enter the OTP sent to your email to verify your account.');
+        } catch (error) {
+          console.error('Error resending OTP:', error);
+        }
+
+        router.replace({
+          pathname: '/otpVerification',
+          params: { email: response.user.email }
+        });
       }
       else if( response.user.image == null || response.user.document == null ) {
+        Alert.alert('Please upload your profile image and document to continue.');
         router.replace('/uploadFile');
       }
       else {

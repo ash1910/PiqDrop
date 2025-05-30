@@ -13,6 +13,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { AddIcon } from '@/components/icons/AddIcon';
 import api from '@/services/api';
+import { authService } from '@/services/auth.service';
 
 const HEADER_HEIGHT = 207;
 
@@ -47,6 +48,13 @@ export default function UploadFileScreen() {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         alert('Sorry, we need camera permissions to make this work!');
+      }
+
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
+        setProfileImage(user.image ? `${baseURLWithoutApi}/${user.image}` : null);
+        setIdCardImage(user.document ? `${baseURLWithoutApi}/${user.document}` : null);
       }
     })();
   }, []);
@@ -132,6 +140,14 @@ export default function UploadFileScreen() {
           'Content-Type': 'multipart/form-data',
         },
       });
+
+      // If this is a profile image upload, update the user's image in auth service
+      if (type === 'profile' && response.data?.data?.image) {
+        await authService.updateUserImage(response.data.data.image);
+      }
+      if (type === 'id_card' && response.data?.data?.document) {
+        await authService.updateUserDocument(response.data.data.document);
+      }
 
       return response.data;
     } catch (error: any) {
@@ -313,7 +329,7 @@ export default function UploadFileScreen() {
                 Alert.alert('Error', 'Please upload both ID document and profile picture');
                 return;
               }
-              router.push('/success');
+              router.push('/(tabs)');
             }}
           >
             <Text style={styles.continueButtonText}>Tap to continue</Text>
