@@ -22,15 +22,15 @@ export default function WelcomeScreen() {
       try {
         const isAuthenticated = await authService.isAuthenticated();
         
-        // Show the welcome content for 3 seconds
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Run the timer and API call concurrently, ensuring minimum 3 second wait
+        const [_, user] = await Promise.all([
+          new Promise(resolve => setTimeout(resolve, 3000)),
+          isAuthenticated ? authService.getUser() : null
+        ]);
         
-        setShowContent(false);
+        //setShowContent(false);
         
-        if (isAuthenticated) {
-          // User is authenticated and has remember me enabled
-          const user = await authService.getCurrentUser();
-
+        if (isAuthenticated && user) {
           if( user.is_verified == 0 ) {
             router.replace('/login');
           }

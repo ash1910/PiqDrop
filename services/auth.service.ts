@@ -135,6 +135,19 @@ class AuthService {
     }
   }
 
+  async getUser() {
+    try {
+      const response = await api.get('/user');
+
+      const { user } = response.data;
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      return user;
+    } catch (error: any) {
+      console.error('API Response Error:', error);
+      throw error;
+    }
+  }
+
   async verifyOtp(email: string, otp: string) {
     try {
       const response = await api.post('/verify-otp', { email, otp });

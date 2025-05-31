@@ -23,6 +23,9 @@ import { CalendarIcon } from '@/components/icons/CalendarDateIcon';
 import { ProfileIcon } from '@/components/icons/ProfileIcon';
 import { SimpleCheckIcon } from '@/components/icons/SimpleCheckIcon';
 import { SuccessBadgeIcon } from '@/components/icons/SuccessBadgeIcon';
+import { packageListService } from '@/services/packageList.service';
+import type { Package } from '@/services/packageList.service';
+import api from '@/services/api';
 
 const HEADER_HEIGHT = 120;
 
@@ -42,6 +45,7 @@ const COLORS = {
   subtitle: '#616161',
 };
 
+
 export default function ManageScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -52,13 +56,17 @@ export default function ManageScreen() {
   const [modalCancelDeliveryVisible, setModalCancelDeliveryVisible] = useState(false);
   const [shouldOpenSecond, setShouldOpenSecond] = useState(false);
   const [shouldOpenThird, setShouldOpenThird] = useState(false);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [pkg, setPkg] = useState<Package | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState(0);
   const translateX = useSharedValue(0);
 
   const [filterBy, setFilterBy] = useState('deliveryDate');
 
-  const handlePress = (index) => {
+  const handlePress = (index: number) => {
     setActiveTab(index);
     translateX.value = withTiming(index * TAB_WIDTH, { duration: 200 });
   };
@@ -85,6 +93,41 @@ export default function ManageScreen() {
   });
 
   useEffect(() => {
+    fetchPackages();
+  }, []);
+
+  const fetchPackages = async () => {
+    try {
+      setLoading(true);
+      const response = await packageListService.getMyPackages();
+      setPackages(response.data);
+      console.log('packages', response.data);
+    } catch (err) {
+      setError('Failed to fetch packages');
+      console.error('Error fetching packages:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFilteredPackages = (): Package[] => {
+    if (!packages) return [];
+    
+    switch (activeTab) {
+      case 0: // On going
+        return packages.filter(pkg => pkg.order.status === 'ongoing');
+      case 1: // Accepted
+        return packages.filter(pkg => pkg.order.status === 'active');
+      case 2: // Completed
+        return packages.filter(pkg => pkg.order.status === 'completed');
+      case 3: // Canceled
+        return packages.filter(pkg => pkg.order.status === 'canceled');
+      default:
+        return [];
+    }
+  };
+
+  useEffect(() => {
     StatusBar.setBarStyle('dark-content');
   }, []);
 
@@ -107,67 +150,6 @@ export default function ManageScreen() {
       keyboardDidHideListener.remove();
     };
   }, []);
-
-  const deliveriesGrouped = [
-    {
-      id: 0,
-      items: [
-        {
-          name: 'Jhon Doe',
-          location: 'Germany, Berlin, Danziger Str. 12A 10435, BE DEU.',
-          distance: '10 m from you',
-          image: require('@/assets/images/profile_pic.jpg'),
-          pinColor: '#28C76F',
-        },
-        {
-          name: 'Gregory Smith',
-          location: 'Sweden, Gothenburg Långströmsgatan 7, 41870',
-          distance: '10000 km from you',
-          image: require('@/assets/images/profile_pic_1.jpg'),
-          pinColor: '#EA5455',
-        },
-      ],
-    },
-    {
-      id: 1,
-      items: [
-        {
-          name: 'Ingolf André',
-          location: 'Germany, Berlin, Danziger Str. 12A 10435, BE DEU.',
-          distance: '10 m from you',
-          image: require('@/assets/images/profile_pic.jpg'),
-          pinColor: '#28C76F',
-        },
-        {
-          name: 'Wiebke Friedhelm',
-          location: 'United Kingdom, Oldhurst, 94 Horsefair Green',
-          distance: '5000 km from you',
-          image: require('@/assets/images/profile_pic_1.jpg'),
-          pinColor: '#EA5455',
-        },
-      ],
-    },
-    {
-      id: 2,
-      items: [
-        {
-          name: 'Ingolf André',
-          location: 'Germany, Berlin, Danziger Str. 12A 10435, BE DEU.',
-          distance: '10 m from you',
-          image: require('@/assets/images/profile_pic.jpg'),
-          pinColor: '#28C76F',
-        },
-        {
-          name: 'Wiebke Friedhelm',
-          location: 'United Kingdom, Oldhurst, 94 Horsefair Green',
-          distance: '5000 km from you',
-          image: require('@/assets/images/profile_pic_1.jpg'),
-          pinColor: '#EA5455',
-        },
-      ],
-    },
-  ];
-  
 
   return (
     <KeyboardAvoidingView 
@@ -236,188 +218,110 @@ export default function ManageScreen() {
 
           {/* Tab Content */}
           <View style={styles.contentContainer}>
-            {activeTab === 0 && (
-            <>
-              {deliveriesGrouped.map((group, index) => (
-                <View style={styles.card} key={index}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>Delivery overview</Text>
-                    <TouchableOpacity onPress={() => setModalVisible(true)}>
-                      <MoreVerticalIcon size={20} />
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity style={styles.cardContainer} onPress={() => router.push('/orderDetail')}>
-                    <View style={styles.mapPinContainer}>
-                      <MapIcon size={24} color={COLORS.primary} />
-                      <VerticalDashedLineIcon />
-                      <MapIcon size={24} color={COLORS.danger} />
-                    </View>
-                    <View style={styles.itemRowContainer}>
-                      {group.items.map((item, i) => (
-                        <View style={styles.itemRow} key={i}>                          
-                          <View style={styles.info}>
-                            <View style={styles.infoRow}>
-                              <Image source={item.image} style={styles.avatar} />
-                              <Text style={styles.name}>{item.name}</Text>
+            {loading ? (
+              <View style={styles.emptyContainer}>
+                <Text>Loading...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.emptyContainer}>
+                <Text>{error}</Text>
+              </View>
+            ) : (
+              <>
+                {getFilteredPackages().length > 0 ? (
+                  getFilteredPackages().map((pkg, index) => (
+                    <View style={styles.card} key={pkg.id}>
+                      <View style={styles.cardHeader}>
+                        <Text style={styles.cardTitle}>Delivery overview</Text>
+                        {pkg.order.status === 'ongoing' && (
+                        <TouchableOpacity onPress={() => {
+                          setModalVisible(true);
+                          setPkg(pkg);
+                        }}>
+                          <MoreVerticalIcon size={20} />
+                        </TouchableOpacity>
+                        )}
+                      </View>
+                      <TouchableOpacity style={styles.cardContainer} onPress={() => router.push({
+                        pathname: '/orderDetail',
+                        params: { orderData: JSON.stringify(pkg) }
+                      })}>
+                        <View style={styles.mapPinContainer}>
+                          <MapIcon size={24} color={COLORS.primary} />
+                          <VerticalDashedLineIcon />
+                          <MapIcon size={24} color={COLORS.danger} />
+                        </View>
+                        <View style={styles.itemRowContainer}>
+                          <View style={styles.itemRow}>                          
+                            <View style={styles.info}>
+                              <View style={styles.infoRow}>
+                                <Image 
+                                  source={pkg.sender.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${pkg.sender.image}` } : require('@/assets/img/profile-blank.png')} 
+                                  style={styles.avatar} 
+                                />
+                                <Text style={styles.name}>{pkg.pickup.name}</Text>
+                              </View>
+                              <Text style={styles.location}>{pkg.pickup.address}</Text>
                             </View>
-                            <Text style={styles.location}>{item.location}</Text>
-                            <View style={styles.infoRow}>
-                              <DistanceIcon size={14} />
-                              <Text style={styles.distance}>{item.distance}</Text>
+                          </View>
+                          <View style={styles.itemRow}>                          
+                            <View style={styles.info}>
+                              <View style={styles.infoRow}>
+                                <Image 
+                                  source={require('@/assets/img/profile-blank.png')} 
+                                  style={styles.avatar} 
+                                />
+                                <Text style={styles.name}>{pkg.drop.name}</Text>
+                              </View>
+                              <Text style={styles.location}>{pkg.drop.address}</Text>
                             </View>
                           </View>
                         </View>
-                      ))}
+                      </TouchableOpacity>
+                      
+                      <View style={styles.footer}>
+                        <Text style={styles.price}>${pkg.price}</Text>
+                        <Text style={[
+                          styles.status,
+                          {
+                            backgroundColor: 
+                              pkg.order.status === 'ongoing' ? COLORS.buttonBackground :
+                              pkg.order.status === 'active' ? 'rgba(40, 152, 255, 0.15)' :
+                              pkg.order.status === 'completed' ? 'rgba(85, 176, 134, 0.15)' :
+                              'rgba(246, 63, 63, 0.15)',
+                            color:
+                              pkg.order.status === 'ongoing' ? COLORS.text :
+                              pkg.order.status === 'active' ? '#2898FF' :
+                              pkg.order.status === 'completed' ? '#55B086' :
+                              '#F63F3F'
+                          }
+                        ]}>
+                          {pkg.order.status === 'ongoing' ? 'In Progress' :
+                           pkg.order.status === 'active' ? 'Accepted' :
+                           pkg.order.status === 'completed' ? 'Completed' :
+                           'Canceled'}
+                        </Text>
+                      </View>
                     </View>
-                  </TouchableOpacity>
-                  
-                  <View style={styles.footer}>
-                    <Text style={styles.price}>$20.00</Text>
-                    <Text style={styles.status}>In progress</Text>
+                  ))
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <Image source={require('@/assets/images/empty_board.png')} style={styles.emptyImage} />
+                    <Text style={styles.messageHeader}>
+                      {activeTab === 0 ? "You don't have an order yet" :
+                       activeTab === 1 ? "No accepted orders" :
+                       activeTab === 2 ? "Completed orders will show here" :
+                       "Canceled orders list empty"}
+                    </Text>
+                    <Text style={styles.message}>
+                      {activeTab === 0 ? "You don't have ongoing orders at this time" :
+                       activeTab === 1 ? "You don't have accepted orders at this time" :
+                       activeTab === 2 ? "You don't have completed orders at this time" :
+                       "You don't have canceled orders at this time"}
+                    </Text>
                   </View>
-                </View>
-              ))}
-              <View style={[styles.emptyContainer, {display: 'none'}]}>
-                <Image source={require('@/assets/images/empty_board.png')} style={styles.emptyImage} />
-                <Text style={styles.messageHeader}>You don't have an order yet</Text>
-                <Text style={styles.message}>You don't have ongoing orders at this time</Text>
-              </View>
-            </>
-            )}
-            {activeTab === 1 && (
-            <>
-            {deliveriesGrouped.map((group, index) => (
-              <View style={styles.card} key={index}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Delivery overview</Text>
-                </View>
-                <View style={styles.cardContainer}>
-                  <View style={styles.mapPinContainer}>
-                    <MapIcon size={24} color={COLORS.primary} />
-                    <VerticalDashedLineIcon />
-                    <MapIcon size={24} color={COLORS.danger} />
-                  </View>
-                  <View style={styles.itemRowContainer}>
-                    {group.items.map((item, i) => (
-                      <View style={styles.itemRow} key={i}>                          
-                        <View style={styles.info}>
-                          <View style={styles.infoRow}>
-                            <Image source={item.image} style={styles.avatar} />
-                            <Text style={styles.name}>{item.name}</Text>
-                          </View>
-                          <Text style={styles.location}>{item.location}</Text>
-                          <View style={styles.infoRow}>
-                            <DistanceIcon size={14} />
-                            <Text style={styles.distance}>{item.distance}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-                
-                <View style={styles.footer}>
-                  <Text style={styles.price}>$20.00</Text>
-                  <Text style={[styles.status, {backgroundColor: 'rgba(40, 152, 255, 0.15)', color: '#2898FF', }]}>Accepted</Text>
-                </View>
-              </View>
-            ))}
-              <View style={[styles.emptyContainer, {display: 'none'}]}>
-                <Image source={require('@/assets/images/empty_board.png')} style={styles.emptyImage} />
-                <Text style={styles.messageHeader}>No accepted orders</Text>
-                <Text style={styles.message}>You don't have accepted orders at this time</Text>
-              </View>
-            </>
-            )}
-            {activeTab === 2 && (
-            <>
-            {deliveriesGrouped.map((group, index) => (
-              <View style={styles.card} key={index}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Delivery overview</Text>
-                </View>
-                <View style={styles.cardContainer}>
-                  <View style={styles.mapPinContainer}>
-                    <MapIcon size={24} color={COLORS.primary} />
-                    <VerticalDashedLineIcon />
-                    <MapIcon size={24} color={COLORS.danger} />
-                  </View>
-                  <View style={styles.itemRowContainer}>
-                    {group.items.map((item, i) => (
-                      <View style={styles.itemRow} key={i}>                          
-                        <View style={styles.info}>
-                          <View style={styles.infoRow}>
-                            <Image source={item.image} style={styles.avatar} />
-                            <Text style={styles.name}>{item.name}</Text>
-                          </View>
-                          <Text style={styles.location}>{item.location}</Text>
-                          <View style={styles.infoRow}>
-                            <DistanceIcon size={14} />
-                            <Text style={styles.distance}>{item.distance}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-                
-                <View style={styles.footer}>
-                  <Text style={styles.price}>$20.00</Text>
-                  <Text style={[styles.status, {backgroundColor: 'rgba(85, 176, 134, 0.15)', color: '#55B086', }]}>Completed</Text>
-                </View>
-              </View>
-            ))}
-              <View style={[styles.emptyContainer, {display: 'none'}]}>
-                <Image source={require('@/assets/images/empty_board.png')} style={styles.emptyImage} />
-                <Text style={styles.messageHeader}>Completed orders will show here</Text>
-                <Text style={styles.message}>You don't have completed orders at this time</Text>
-              </View>
-            </>
-            )}
-            {activeTab === 3 && (
-            <>
-            {deliveriesGrouped.map((group, index) => (
-              <View style={styles.card} key={index}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Delivery overview</Text>
-                </View>
-                <View style={styles.cardContainer}>
-                  <View style={styles.mapPinContainer}>
-                    <MapIcon size={24} color={COLORS.primary} />
-                    <VerticalDashedLineIcon />
-                    <MapIcon size={24} color={COLORS.danger} />
-                  </View>
-                  <View style={styles.itemRowContainer}>
-                    {group.items.map((item, i) => (
-                      <View style={styles.itemRow} key={i}>                          
-                        <View style={styles.info}>
-                          <View style={styles.infoRow}>
-                            <Image source={item.image} style={styles.avatar} />
-                            <Text style={styles.name}>{item.name}</Text>
-                          </View>
-                          <Text style={styles.location}>{item.location}</Text>
-                          <View style={styles.infoRow}>
-                            <DistanceIcon size={14} />
-                            <Text style={styles.distance}>{item.distance}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-                
-                <View style={styles.footer}>
-                  <Text style={styles.price}>$20.00</Text>
-                  <Text style={[styles.status, {backgroundColor: 'rgba(246, 63, 63, 0.15)', color: '#F63F3F', }]}>Canceled</Text>
-                </View>
-              </View>
-            ))}
-              <View style={[styles.emptyContainer, {display: 'none'}]}>
-                <Image source={require('@/assets/images/empty_board.png')} style={styles.emptyImage} />
-                <Text style={styles.messageHeader}>Canceled orders list empty</Text>
-                <Text style={styles.message}>You don't have canceled orders at this time</Text>
-              </View>
-            </>
+                )}
+              </>
             )}
 
             <Modal
@@ -455,7 +359,10 @@ export default function ManageScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
                     setModalVisible(false);
-                    router.push('/(tabs)');
+                    router.push({
+                      pathname: '/(tabs)/packageEdit',
+                      params: { packageData: JSON.stringify(pkg) }
+                    });
                   }}>
                     <RoundedEditIcon size={20} />
                     <Text style={styles.modalOptionText}>Edit Delivery</Text>

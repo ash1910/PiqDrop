@@ -101,6 +101,12 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="packageEdit"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

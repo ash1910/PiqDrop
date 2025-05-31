@@ -440,17 +440,16 @@ export default function AccountScreen() {
                     setIsLoggingOut(true);
                     await authService.logout();
                     setShowLogoutModal(false);
-                    router.reset({
-                      index: 0,
-                      routes: [{ name: 'login' }],
-                    });
+                    router.replace('/login');
                   } catch (error: any) {
                     console.error('Logout failed:', error);
-                    Alert.alert(
-                      'Logout Failed',
-                      error.message || 'Something went wrong. Please try again.',
-                      [{ text: 'OK' }]
-                    );
+                    setShowLogoutModal(false);
+                    router.replace('/login');
+                    // Alert.alert(
+                    //   'Logout Failed',
+                    //   error.message || 'Something went wrong. Please try again.',
+                    //   [{ text: 'OK' }]
+                    // );
                   } finally {
                     setIsLoggingOut(false);
                   }

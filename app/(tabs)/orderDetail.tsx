@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -30,6 +30,38 @@ const COLORS = {
 interface Coordinates {
   latitude: number;
   longitude: number;
+}
+
+interface OrderData {
+  id: number;
+  sender: {
+    id: number;
+    image: string;
+  };
+  weight: string;
+  price: string;
+  pickup: {
+    name: string;
+    mobile: string;
+    address: string;
+    details: string;
+    date: string;
+    time: string;
+    coordinates: {
+      lat: string;
+      lng: string;
+    };
+  };
+  drop: {
+    name: string;
+    mobile: string;
+    address: string;
+    details: string;
+    coordinates: {
+      lat: string;
+      lng: string;
+    };
+  };
 }
 
 const calculateMapDeltas = (pickup: Coordinates, dropoff: Coordinates) => {
@@ -63,7 +95,9 @@ const calculateMidpoint = (pickup: Coordinates, dropoff: Coordinates) => {
   };
 };
 
-export default function SafetyScreen() {
+export default function OrderDetailScreen() {
+  const params = useLocalSearchParams();
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -114,31 +148,137 @@ export default function SafetyScreen() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      // // Pick-up
-      // const pickup = await Location.geocodeAsync("Germany, Berlin, Danziger Str.12A 10435, BE DEU");
-      // if (pickup.length > 0) setPickupCoords({
-      //   latitude: pickup[0].latitude,
-      //   longitude: pickup[0].longitude,
-      // });
+    try {
+      console.log("=== DEBUG: Starting params.orderData effect ===");
+      console.log("Raw params:", params);
+      
+      if (!params.orderData) {
+        console.log("DEBUG: No order data in params");
+        return;
+      }
 
-      // // Drop-off
-      // const dropoff = await Location.geocodeAsync("Sweden, Gothenburg, Långströmsgatan 7, 41870.");
-      // if (dropoff.length > 0) setDropoffCoords({
-      //   latitude: dropoff[0].latitude,
-      //   longitude: dropoff[0].longitude,
-      // });
-      // console.log(pickupCoords, dropoffCoords);
-      setPickupCoords({
-        latitude: 52.5403699,
-        longitude: 13.4148486,
-      });
-      setDropoffCoords({
-        latitude: 57.7242591,
-        longitude: 11.9028911,
-      });
-    })();
-  }, []);
+      console.log("DEBUG: params.orderData type:", typeof params.orderData);
+      console.log("DEBUG: params.orderData value:", params.orderData);
+
+      // If it's a string, try to parse it as JSON
+      if (typeof params.orderData === 'string') {
+        try {
+          console.log("DEBUG: Attempting to parse string data");
+          const parsedData = JSON.parse(params.orderData);
+          console.log("DEBUG: Successfully parsed JSON:", parsedData);
+          if (isValidOrderData(parsedData)) {
+            console.log("DEBUG: Data passed validation, setting orderData");
+            setOrderData(parsedData);
+          } else {
+            console.log("DEBUG: Data failed validation");
+          }
+        } catch (e) {
+          console.error("DEBUG: Failed to parse order data string:", e);
+        }
+      }
+      // If it's already an object, validate and use it
+      else if (typeof params.orderData === 'object' && params.orderData !== null) {
+        console.log("DEBUG: Validating object data");
+        if (isValidOrderData(params.orderData)) {
+          console.log("DEBUG: Object data passed validation, setting orderData");
+          setOrderData(params.orderData);
+        } else {
+          console.log("DEBUG: Object data failed validation");
+        }
+      }
+    } catch (error) {
+      console.error("DEBUG: Error in params.orderData effect:", error);
+    }
+  }, [params.orderData]);
+
+  // Add debugging to validation function
+  const isValidOrderData = (data: any): data is OrderData => {
+    console.log("=== DEBUG: Validating Order Data ===");
+    const checks = {
+      hasId: 'id' in data,
+      hasSender: 'sender' in data,
+      hasPickup: 'pickup' in data,
+      hasDrop: 'drop' in data,
+      hasWeight: 'weight' in data,
+      hasPrice: 'price' in data,
+      pickupIsObject: data.pickup && typeof data.pickup === 'object',
+      dropIsObject: data.drop && typeof data.drop === 'object',
+      hasPickupCoords: data.pickup && 'coordinates' in data.pickup,
+      hasDropCoords: data.drop && 'coordinates' in data.drop
+    };
+    
+    console.log("DEBUG: Validation checks:", checks);
+    
+    const isValid = (
+      checks.hasId &&
+      checks.hasSender &&
+      checks.hasPickup &&
+      checks.hasDrop &&
+      checks.hasWeight &&
+      checks.hasPrice &&
+      checks.pickupIsObject &&
+      checks.dropIsObject &&
+      checks.hasPickupCoords &&
+      checks.hasDropCoords
+    );
+    
+    console.log("DEBUG: Final validation result:", isValid);
+    return isValid;
+  };
+
+  useEffect(() => {
+    const setMarkerInMap = async () => {
+      console.log("=== DEBUG: Starting setMarkerInMap ===");
+      console.log("DEBUG: Current orderData:", orderData);
+      
+      // Pick-up
+      if(orderData?.pickup.coordinates.lat && orderData?.pickup.coordinates.lng){
+        console.log("DEBUG: Setting pickup coords from coordinates");
+        setPickupCoords({
+          latitude: parseFloat(orderData?.pickup.coordinates.lat || '0'),
+          longitude: parseFloat(orderData?.pickup.coordinates.lng || '0'),
+        });
+      }
+      else if(orderData?.pickup.address){
+        console.log("DEBUG: Attempting to geocode pickup address:", orderData.pickup.address);
+        const pickup = await Location.geocodeAsync(orderData?.pickup.address || '');
+        if (pickup.length > 0) {
+          console.log("DEBUG: Successfully geocoded pickup address");
+          setPickupCoords({
+            latitude: pickup[0].latitude,
+            longitude: pickup[0].longitude,
+          });
+        }
+      }
+      
+      // Drop-off
+      if(orderData?.drop.coordinates.lat && orderData?.drop.coordinates.lng){
+        console.log("DEBUG: Setting dropoff coords from coordinates");
+        setDropoffCoords({
+          latitude: parseFloat(orderData?.drop.coordinates.lat || '0'),
+          longitude: parseFloat(orderData?.drop.coordinates.lng || '0'),
+        });
+      }
+      else if(orderData?.drop.address){
+        console.log("DEBUG: Attempting to geocode dropoff address:", orderData.drop.address);
+        const dropoff = await Location.geocodeAsync(orderData?.drop.address || '');
+        if (dropoff.length > 0) {
+          console.log("DEBUG: Successfully geocoded dropoff address");
+          setDropoffCoords({
+            latitude: dropoff[0].latitude,
+            longitude: dropoff[0].longitude,
+          });
+        }
+      }
+    }
+    
+    // Only call setMarkerInMap if orderData exists
+    if (orderData) {
+      setMarkerInMap();
+    } else {
+      console.log("DEBUG: Skipping setMarkerInMap - orderData is null");
+    }
+  }, [orderData]);
 
   useEffect(() => {
     if (pickupCoords && dropoffCoords) {
@@ -163,7 +303,7 @@ export default function SafetyScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
-          <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.leftArrow} onPress={() => router.replace('/(tabs)/manage')}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
           <Text style={styles.pageTitle}>Order Detail</Text>
@@ -188,7 +328,7 @@ export default function SafetyScreen() {
               <Marker
                 coordinate={pickupCoords}
                 title="Pick-up"
-                description="Germany, Berlin, Danziger Str.12A 10435, BE DEU"
+                description={orderData?.pickup.address || 'N/A'}
               >
                 <Image source={require('@/assets/icons/pickup-marker.png')} style={{ width: 36, height: 36 }} />
               </Marker>
@@ -197,7 +337,7 @@ export default function SafetyScreen() {
               <Marker
                 coordinate={dropoffCoords}
                 title="Drop-off"
-                description="Sweden, Gothenburg, Långströmsgatan 7, 41870."
+                description={orderData?.drop.address || 'N/A'}
               >
                 <Image source={require('@/assets/icons/dropoff-marker.png')} style={{ width: 36, height: 36 }} />
               </Marker>
@@ -206,16 +346,15 @@ export default function SafetyScreen() {
         </View>
 
         <View style={styles.contentContainer}>
-
           {/* Order Summary Card */}
           <View style={styles.orderSummaryCard}>
             <View style={styles.orderSummaryRow}>
               <View style={styles.orderSummaryUserRow}>
                 <View style={styles.userAvatar} />
-                <Text style={styles.orderSummaryUserName}>Jhon doe</Text>
+                <Text style={styles.orderSummaryUserName}>{orderData?.pickup.name || 'N/A'}</Text>
               </View>
               <View style={styles.orderSummaryPriceBox}>
-                <Text style={styles.orderSummaryPrice}>$200.00</Text>
+                <Text style={styles.orderSummaryPrice}>${parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
               </View>
             </View>
           </View>
@@ -226,32 +365,37 @@ export default function SafetyScreen() {
             <View style={styles.pickupDetailsDivider} />
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>Name:</Text>
-              <Text style={styles.pickupDetailsValue}>Jhon Doe</Text>
+              <Text style={styles.pickupDetailsValue}>{orderData?.pickup.name || 'N/A'}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>Number:</Text>
-              <Text style={styles.pickupDetailsValue}>+4935436567</Text>
+              <Text style={styles.pickupDetailsValue}>{orderData?.pickup.mobile || 'N/A'}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>Weight:</Text>
-              <Text style={styles.pickupDetailsValue}>40Kg</Text>
+              <Text style={styles.pickupDetailsValue}>
+                {orderData?.weight 
+                  ? (typeof orderData.weight === 'string' && orderData.weight.toLowerCase().includes('kg')
+                    ? orderData.weight 
+                    : `${orderData.weight}Kg`)
+                  : 'N/A'}
+              </Text>
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>Price:</Text>
-              <Text style={styles.pickupDetailsValue}>$200.00</Text>
+              <Text style={styles.pickupDetailsValue}>${parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
             </View>
             <View style={[styles.pickupDetailsRow, { alignItems: 'flex-start' }]}> 
               <Text style={styles.pickupDetailsLabel}>Location:</Text>
               <Text style={styles.pickupDetailsValue}>
-                Germany, Berlin, Danziger{"\n"}Str.12A 10435, BE DEU
+                {orderData?.pickup.address || 'N/A'}
               </Text>
             </View>
             {/* Note Section */}
             <View style={styles.noteBox}>
               <Text style={styles.noteLabel}>Note</Text>
-
               <Text style={styles.noteText}>
-                The is water intolerant don't let water touch it.
+                {orderData?.pickup.details || 'No details provided'}
               </Text>
             </View>
           </View>
@@ -262,24 +406,23 @@ export default function SafetyScreen() {
             <View style={styles.pickupDetailsDivider} />
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>Name:</Text>
-              <Text style={styles.pickupDetailsValue}>Gregory Smith</Text>
+              <Text style={styles.pickupDetailsValue}>{orderData?.drop.name || 'N/A'}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>Number:</Text>
-              <Text style={styles.pickupDetailsValue}>+46700077777</Text>
+              <Text style={styles.pickupDetailsValue}>{orderData?.drop.mobile || 'N/A'}</Text>
             </View>
             <View style={[styles.pickupDetailsRow, { alignItems: 'flex-start' }]}> 
               <Text style={styles.pickupDetailsLabel}>Location:</Text>
               <Text style={styles.pickupDetailsValue}>
-                Sweden, Gothenburg, Långströmsgatan 7, 41870.
+                {orderData?.drop.address || 'N/A'}
               </Text>
             </View>
             {/* Note Section */}
             <View style={styles.noteBox}>
               <Text style={styles.noteLabel}>Note</Text>
-
               <Text style={styles.noteText}>
-                Please call him in the night he works in the night and sleep in the day
+                {orderData?.drop.details || 'No details provided'}
               </Text>
             </View>
           </View>
