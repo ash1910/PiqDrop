@@ -277,6 +277,8 @@ export default function PackageEditScreen() {
           }
 
           switchTab('pickup');
+          // translate to top of the screen
+          scrollRef.current?.scrollTo({ y: 0, animated: true });
 
         }
       } catch (error) {

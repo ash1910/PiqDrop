@@ -14,6 +14,7 @@ import MapView from 'react-native-maps';
 import { Marker, MapMarker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import mapStyle from '@/components/mapStyle.json';
+import api from '@/services/api';
 
 const HEADER_HEIGHT = 120;
 
@@ -106,6 +107,7 @@ export default function OrderDetailScreen() {
   const [mapDeltas, setMapDeltas] = useState({ latitudeDelta: 0.05, longitudeDelta: 0.05 });
   const [mapCenter, setMapCenter] = useState<Coordinates | null>(null);
   const [showMarkerInfo, setShowMarkerInfo] = useState(true);
+  const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
   
   const pickupMarkerRef = useRef<MapMarker>(null);
   const dropoffMarkerRef = useRef<MapMarker>(null);
@@ -359,7 +361,11 @@ export default function OrderDetailScreen() {
           <View style={styles.orderSummaryCard}>
             <View style={styles.orderSummaryRow}>
               <View style={styles.orderSummaryUserRow}>
-                <View style={styles.userAvatar} />
+                {orderData?.sender.image ? ( 
+                  <Image source={{ uri: `${baseURLWithoutApi}/${orderData.sender.image}` }} style={styles.userAvatar} />
+                ) : ( 
+                  <View style={styles.userAvatar} />
+                )}
                 <Text style={styles.orderSummaryUserName}>{orderData?.pickup.name || 'N/A'}</Text>
               </View>
               <View style={styles.orderSummaryPriceBox}>
