@@ -1,8 +1,7 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, TouchableOpacity } from 'react-native';
 
-import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
@@ -27,7 +26,6 @@ export default function TabLayout() {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.text,
         headerShown: false,
-        tabBarButton: HapticTab,
         tabBarLabelStyle: {
           fontFamily: 'nunito-semibold',
           fontSize: 10,
@@ -44,7 +42,6 @@ export default function TabLayout() {
         },
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
             borderTopWidth: 0,
             height: 86,
@@ -71,6 +68,15 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="manage"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push({
+              pathname: '/manage',
+              params: { refresh: Date.now() }
+            });
+          },
+        }}
         options={{
           title: 'Manage',
           tabBarIcon: ({ color }) => <ManageIcon size={25} color={color} />,

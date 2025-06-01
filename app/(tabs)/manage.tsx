@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Pressable } from 'react-native';
 import Modal from 'react-native-modal';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -47,6 +47,7 @@ const COLORS = {
 
 
 export default function ManageScreen() {
+  const { refresh } = useLocalSearchParams();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -94,14 +95,14 @@ export default function ManageScreen() {
 
   useEffect(() => {
     fetchPackages();
-  }, []);
+  }, [refresh]);
 
   const fetchPackages = async () => {
     try {
       setLoading(true);
       const response = await packageListService.getMyPackages();
-      setPackages(response.data);
-      console.log('packages', response.data);
+      setPackages(response);
+      console.log('packages', response);
     } catch (err) {
       setError('Failed to fetch packages');
       console.error('Error fetching packages:', err);

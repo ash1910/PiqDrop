@@ -28,6 +28,15 @@ class PackageService {
       throw error;
     }
   }
+
+  async updatePackage(id: number, data: PackageCreateRequest) {
+    try {
+      const response = await api.put(`/packages/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const packageService = new PackageService(); 

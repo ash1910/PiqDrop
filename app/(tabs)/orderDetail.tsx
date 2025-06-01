@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import MapView from 'react-native-maps';
-import { Marker } from 'react-native-maps';
+import { Marker, MapMarker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import mapStyle from '@/components/mapStyle.json';
 
@@ -105,6 +105,10 @@ export default function OrderDetailScreen() {
   const [dropoffCoords, setDropoffCoords] = useState<Coordinates | null>(null);
   const [mapDeltas, setMapDeltas] = useState({ latitudeDelta: 0.05, longitudeDelta: 0.05 });
   const [mapCenter, setMapCenter] = useState<Coordinates | null>(null);
+  const [showMarkerInfo, setShowMarkerInfo] = useState(true);
+  
+  const pickupMarkerRef = useRef<MapMarker>(null);
+  const dropoffMarkerRef = useRef<MapMarker>(null);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -288,6 +292,9 @@ export default function OrderDetailScreen() {
       const midpoint = calculateMidpoint(pickupCoords, dropoffCoords);
       setMapDeltas(deltas);
       setMapCenter(midpoint);
+      // hide info window by default
+      pickupMarkerRef.current?.hideCallout();
+      dropoffMarkerRef.current?.hideCallout();
     }
   }, [pickupCoords, dropoffCoords]);
 
@@ -326,6 +333,7 @@ export default function OrderDetailScreen() {
           >
             {pickupCoords && (
               <Marker
+                ref={pickupMarkerRef}
                 coordinate={pickupCoords}
                 title="Pick-up"
                 description={orderData?.pickup.address || 'N/A'}
@@ -335,6 +343,7 @@ export default function OrderDetailScreen() {
             )}
             {dropoffCoords && (
               <Marker
+                ref={dropoffMarkerRef}
                 coordinate={dropoffCoords}
                 title="Drop-off"
                 description={orderData?.drop.address || 'N/A'}
@@ -384,6 +393,10 @@ export default function OrderDetailScreen() {
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>Price:</Text>
               <Text style={styles.pickupDetailsValue}>${parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
+            </View>
+            <View style={styles.pickupDetailsRow}>
+              <Text style={styles.pickupDetailsLabel}>Date:</Text>
+              <Text style={styles.pickupDetailsValue}>{orderData?.pickup.date ? `${orderData.pickup.date}` : ''} {orderData?.pickup.time ? `${orderData.pickup.time}` : 'N/A'}</Text>
             </View>
             <View style={[styles.pickupDetailsRow, { alignItems: 'flex-start' }]}> 
               <Text style={styles.pickupDetailsLabel}>Location:</Text>

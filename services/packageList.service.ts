@@ -46,11 +46,16 @@ export interface Package {
   updated_at: string;
 }
 
+interface PackageListResponse {
+  data: Package[];
+  status: string;
+}
+
 class PackageListService {
   async getMyPackages() {
     try {
-      const response = await api.get<Package[]>('/packages/my-packages');
-      return response.data;
+      const response = await api.get<PackageListResponse>('/packages/my-packages');
+      return response.data?.data as Package[];
     } catch (error) {
       throw error;
     }

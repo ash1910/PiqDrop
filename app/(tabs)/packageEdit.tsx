@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, TouchableOpacity, Image, StyleSheet, StatusBar,KeyboardAvoidingView, Platform, Modal, Keyboard, ActivityIndicator, Pressable, Dimensions, Alert } from 'react-native';
 import { Checkbox } from 'react-native-paper';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -10,6 +10,7 @@ import { authService } from '@/services/auth.service';
 import { parsePhoneNumber } from 'libphonenumber-js';
 import api from '@/services/api';
 import { packageService } from '@/services/package.service';
+import { Package } from '@/services/packageList.service';
 
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -50,7 +51,15 @@ const COLORS = {
   google: '#DB4437',
 };
 
-export default function HomeScreen() {
+interface RouteParams {
+  path: string;
+  params?: {
+    packageData?: string;
+  };
+}
+
+export default function PackageEditScreen() {
+  const params = useLocalSearchParams();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const [country, setCountry] = useState<Country | null>(null);
@@ -164,43 +173,6 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const user = await authService.getCurrentUser();
-        if (user) {
-          // Set name by combining first_name and last_name
-          setName(`${user.first_name} ${user.last_name}`);
-          if (user.image) {
-            const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
-            setSenderProfileImage(user.image ? {uri: `${baseURLWithoutApi}/${user.image}`} : require('@/assets/img/profile-blank.png'));
-          }
-          
-          // Set phone and country code from mobile if available
-          if (user.mobile) {
-            const phoneNumber = parsePhoneNumber(user.mobile);
-
-            if (phoneNumber && phoneNumber.isValid()) {
-              const cca2 = phoneNumber.country; // e.g., "US"
-              const callCode = phoneNumber.countryCallingCode; // e.g., "1"
-              const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
-
-              setCountryCode(cca2 as Country['cca2']);
-              setCallingCode(callCode as string);
-              setPhone(nationalNumber as string);
-            } else {
-              console.warn('Invalid phone number:', user.mobile);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-      }
-    };
-
-    loadUserData();
-  }, []);
-
-  useEffect(() => {
     if (error) {
       Alert.alert(
         'Validation Error',
@@ -212,6 +184,109 @@ export default function HomeScreen() {
       );
     }
   }, [error]);
+
+  useEffect(() => {
+    const loadPackageData = () => {
+      try {
+        // Get package data from route params
+        if (params.packageData) {
+          const packageData = JSON.parse(params.packageData as string) as Package;
+          
+          // Update all state variables with package data
+          setName(packageData.pickup.name || '');
+          if (packageData.sender.image) {
+            const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
+            setSenderProfileImage(packageData.sender.image ? {uri: `${baseURLWithoutApi}/${packageData.sender.image}`} : require('@/assets/img/profile-blank.png'));
+          }
+          // Set phone and country code from mobile if available
+          if (packageData.pickup.mobile) {
+            const phoneNumber = parsePhoneNumber(packageData.pickup.mobile);
+
+            if (phoneNumber && phoneNumber.isValid()) {
+              const cca2 = phoneNumber.country; // e.g., "US"
+              const callCode = phoneNumber.countryCallingCode; // e.g., "1"
+              const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
+
+              setCountryCode(cca2 as Country['cca2']);
+              setCallingCode(callCode as string);
+              setPhone(nationalNumber as string);
+            } else {
+              console.warn('Invalid phone number:', packageData.pickup.mobile);
+            }
+          }
+          setLocation(packageData.pickup.address || '');
+          setDetails(packageData.pickup.details || '');
+          setWeight(packageData.weight?.toString() || '');
+          setPrice(packageData.price?.toString() || '');
+          
+          // Set pickup date and time
+          if (packageData.pickup.date && packageData.pickup.time) {
+            setDate(new Date(packageData.pickup.date));
+            const [hours, minutes] = packageData.pickup.time.split(':');
+            const timeDate = new Date();
+            timeDate.setHours(parseInt(hours), parseInt(minutes));
+            setTime(timeDate);
+          }
+
+          // Set pickup coordinates
+          if (packageData.pickup.coordinates?.lat && packageData.pickup.coordinates?.lng) {
+            const pickupCoords = {
+              latitude: parseFloat(packageData.pickup.coordinates.lat),
+              longitude: parseFloat(packageData.pickup.coordinates.lng)
+            };
+            setMarker(pickupCoords);
+            setRegion({
+              ...pickupCoords,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01
+            });
+          }
+
+          // Set drop-off information
+          setNameDropOff(packageData.drop.name || '');
+          if (packageData.drop.mobile) {
+            const phoneNumber = parsePhoneNumber(packageData.drop.mobile);
+
+            if (phoneNumber && phoneNumber.isValid()) {
+              const cca2 = phoneNumber.country; // e.g., "US"
+              const callCode = phoneNumber.countryCallingCode; // e.g., "1"
+              const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
+
+              setCountryCodeDropOff(cca2 as Country['cca2']);
+              setCallingCodeDropOff(callCode as string);
+              setPhoneDropOff(nationalNumber as string);
+            } else {
+              console.warn('Invalid phone number:', packageData.drop.mobile);
+            }
+          }
+          setLocationDropOff(packageData.drop.address || '');
+          setDetailsDropOff(packageData.drop.details || '');
+
+          // Set drop-off coordinates
+          if (packageData.drop.coordinates?.lat && packageData.drop.coordinates?.lng) {
+            const dropCoords = {
+              latitude: parseFloat(packageData.drop.coordinates.lat),
+              longitude: parseFloat(packageData.drop.coordinates.lng)
+            };
+            setMarkerDropOff(dropCoords);
+            setRegionDropOff({
+              ...dropCoords,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01
+            });
+          }
+
+          switchTab('pickup');
+
+        }
+      } catch (error) {
+        console.error('Error loading package data:', error);
+        Alert.alert('Error', 'Failed to load package data');
+      }
+    };
+
+    loadPackageData();
+  }, [params.packageData]);
 
   const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
@@ -424,41 +499,25 @@ export default function HomeScreen() {
         drop_lng: markerDropOff?.longitude,
       };
 
-      const response = await packageService.createPackage(packageData);
+      // Check if we're updating or creating
+      let response;
       
-      // Clear form or navigate to success page
-      // setName('');
-      // setPhone('');
-      // setLocation('');
-      // setWeight('');
-      // setPrice('');
-      // setDate(new Date());
-      // setTime(new Date());
-      // setDetails('');
-      // setNameDropOff('');
-      // setPhoneDropOff('');
-      // setLocationDropOff('');
-      // setDetailsDropOff('');
-      // setMarker(null);
-      // setMarkerDropOff(null);
-      // setRegion(null);
-      // setRegionDropOff(null);
-      // setActiveTab('pickup');
-      // setMode('map');
-      // setModalVisible(false);
-      // setModalDropOffVisible(false);
-      // setShowDateModal(false);
-      // setShowTimeModal(false);
-      // setError(null);
-      // setIsSubmitting(false);
+      if (params.packageData) {
+        const existingPackage = JSON.parse(params.packageData as string);
+        response = await packageService.updatePackage(existingPackage.id, packageData);
+        Alert.alert('Success', 'Package updated successfully');
+      } else {
+        response = await packageService.createPackage(packageData);
+        Alert.alert('Success', 'Package created successfully');
+      }
+
       router.push({
         pathname: '/(tabs)/orderDetail',
         params: { orderData: JSON.stringify(response.data) }
       });
-      console.log("response.data", response.data);
-      Alert.alert('Job posted successfully');
+
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to create package. Please try again.');
+      setError(err.response?.data?.message || err.message || 'Failed to save package. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -478,7 +537,7 @@ export default function HomeScreen() {
       {isSubmitting ? (
         <ActivityIndicator color={COLORS.buttonText} />
       ) : (
-        <Text style={styles.loginText}>Post Job</Text>
+        <Text style={styles.loginText}>Update Job</Text>
       )}
     </TouchableOpacity>
   );
@@ -495,24 +554,6 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header]}>
-          <View style={styles.headerTopContent}>
-            <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
-            <Text style={styles.appName}>Welcome to PiqDrop.{'\n'}We value you.</Text>
-            <TouchableOpacity style={styles.bellIcon} onPress={() => router.push('/(tabs)/notification')}>
-              <BellIcon size={44} color="white" />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity 
-            style={[styles.loginButton, isSubmitting && styles.disabledButton]} 
-            onPress={() => handleSubmit()}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={COLORS.buttonText} />
-            ) : (
-              <Text style={styles.loginText}>Send Package</Text>
-            )}
-          </TouchableOpacity>
           {/* Toggle Buttons */}
           <View style={styles.tabContainer}>
             <TouchableOpacity

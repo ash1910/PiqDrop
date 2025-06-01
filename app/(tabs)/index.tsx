@@ -187,6 +187,8 @@ export default function HomeScreen() {
               setCountryCode(cca2 as Country['cca2']);
               setCallingCode(callCode as string);
               setPhone(nationalNumber as string);
+              setCountryCodeDropOff(cca2 as Country['cca2']);
+              setCallingCodeDropOff(callCode as string);
             } else {
               console.warn('Invalid phone number:', user.mobile);
             }
