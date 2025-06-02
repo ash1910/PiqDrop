@@ -41,6 +41,8 @@ interface LoginResponse {
     email: string;
     mobile: string | null;
     address: string | null;
+    latitude: number | null;
+    longitude: number | null;
     image: string | null;
     gender: string;
     nationality: string;
@@ -258,6 +260,21 @@ class AuthService {
       throw error;
     }
   }
+
+  async updateUserProfile(userData: any) {
+    try {
+      const response = await api.post('/update-profile', userData);
+
+      const { user } = response.data;
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+
+      return user;
+    } catch (error: any) {
+      console.error('Update User Profile Error:', error);
+      throw error;
+    }
+  }
+  
 }
 
 export const authService = new AuthService(); 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput, Button } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput, Alert } from 'react-native';
 import { router } from 'expo-router';
 import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
 import Animated, {
@@ -16,7 +16,7 @@ import { ComplexGearIcon } from '@/components/icons/ComplexGearIcon';
 import { EditIcon } from '@/components/icons/EditIcon';
 import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
 import { LocationIcon } from '@/components/icons/LocationIcon';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
@@ -24,6 +24,9 @@ import { CalendarIcon } from '@/components/icons/CalendarDateIcon';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { COUNTRIES } from '@/components/countries';
 import * as ImagePicker from 'expo-image-picker';
+import { authService } from '@/services/auth.service';
+import api from '@/services/api';
+import { parsePhoneNumber } from 'libphonenumber-js';
 
 const HEADER_HEIGHT = 156;
 const { width, height } = Dimensions.get('window');
@@ -45,42 +48,47 @@ const GENDERS = [
   'Other'
 ];
 
+interface UpdateUserData {
+  first_name: string;
+  last_name: string;
+  mobile: string;
+  address: string;
+  date_of_birth: string | null;
+  nationality: string;
+  gender: string;
+  latitude?: number;
+  longitude?: number;
+}
+
 export default function UpdateProfileScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [countryCode, setCountryCode] = useState('SE'); //sweden 
-  const [callingCode, setCallingCode] = useState('46'); 
-  const [phone, setPhone] = useState('435436567');
+  const [countryCode, setCountryCode] = useState<Country['cca2']>('US');
+  const [callingCode, setCallingCode] = useState('1');
+  const [phone, setPhone] = useState('');
   const [country, setCountry] = useState<Country | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
-  const [flag, setFlag] = useState('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAMAAABpA6zvAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAJxQTFRFAEBzAD90I1NjG05nAD50AD9zHVBmG09nPGFYM1tcGk5nHE5m37sO37oO5L0M4bsN3bkP3roP5L0M/80A/8wA3LkQAEBzAD90I1Nj3LgQGk5nAD50AD9zAD51I1JkGk1oAD11578L4LsO/MoC+skC4rwN4bwN5r4L/MoB+8oC470MIFFkHlBlP2JXNl1bHU9mH1BlI1FkI1Jj////hM0NagAAABJ0Uk5T/Pz9/Pz8/v7+/v7+/v7+/v7+yMbBHgAAAAFiS0dEMzfVfF4AAAAJcEhZcwAAAEgAAABIAEbJaz4AAACNSURBVDjL7dHJDoJAEEXRh+KE4tQlqC2COA/g8P8fp0AKNxXSC+OKs75JJa8AZjWmikjNmnZLAo/58zxcLPVKUoc/Cn0WrIswjLQEbdbpbrIw7jl9CQbMHW7pYzcaTyRQX5RTMpAh89D49J4djqesO19iEa7slhTzpPeHBOWi0bN68PJH+lX9wjr8b/gGzuNz038exeMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMDdUMTM6MTQ6NTYrMDI6MDCyBjBrAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDEzLTEwLTA3VDEzOjE0OjU2KzAyOjAww1uI1wAAAABJRU5ErkJggg==');
-  const [firstName, setFirstName] = useState('John');
-  const [lastName, setLastName] = useState('Doe');
-  const [email, setEmail] = useState('john.doe@example.com');
-  const [gender, setGender] = useState('Male');
-  const [nationality, setNationality] = useState('Sweden');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [gender, setGender] = useState('');
+  const [nationality, setNationality] = useState('');
+  const [senderProfileImage, setSenderProfileImage] = useState(require('@/assets/img/profile-blank.png'));
   const [showPicker, setShowPicker] = useState(false);
   const [pickerType, setPickerType] = useState<'nationality' | 'gender'>('nationality');
   
-  const [date, setDate] = useState(new Date('1990-02-05'));
+  const [date, setDate] = useState<Date | null>(null);
   const [showDateModal, setShowDateModal] = useState(false);
-  const [location, setLocation] = useState('Norra Agnegatan 34A, Norra Agnegatan, Stockholm, Stockholm County, 112 29, Sweden');
+  const [location, setLocation] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [marker, setMarker] = useState({
-    latitude: 59.33422549602568,
-    longitude: 18.05871074765847,
-  });
-  const [region, setRegion] = useState({
-    latitude: 59.33422549602568,
-    longitude: 18.05871074765847,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  });
+  const [marker, setMarker] = useState<{latitude: number; longitude: number} | null>(null);
+  const [region, setRegion] = useState<Region | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState('map');
+  const [isLoading, setIsLoading] = useState(false);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -103,17 +111,17 @@ export default function UpdateProfileScreen() {
     setCountryCode(country.cca2);
     setCallingCode(country.callingCode[0]);
     setCountry(country);
-    setFlag(country.flag);
   };
 
-  const handleDateChange = (event: any, selectedDate: any) => {
+  const handleDateChange = (event: any, selectedDate: Date | undefined) => {
     if (selectedDate) setDate(selectedDate);
     if (Platform.OS !== 'ios') setShowDateModal(false);
   };
 
-  const formatDate = (d) =>
-    d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
+  const formatDate = (d: Date | null): string => {
+    if (!d) return '';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
   useEffect(() => {
     (async () => {
@@ -144,6 +152,67 @@ export default function UpdateProfileScreen() {
   }, []);
 
   useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (user) {
+          // Set name by combining first_name and last_name
+          setFirstName(user.first_name);
+          setLastName(user.last_name);
+          setEmail(user.email);
+          setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
+          setNationality(user.nationality);
+          setDate(user.date_of_birth ? new Date(user.date_of_birth) : null);
+
+          if (user.image) {
+            const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
+            setSenderProfileImage(user.image ? {uri: `${baseURLWithoutApi}/${user.image}`} : require('@/assets/img/profile-blank.png'));
+          }
+          
+          // Set phone and country code from mobile if available
+          if (user.mobile) {
+            const phoneNumber = parsePhoneNumber(user.mobile);
+
+            if (phoneNumber && phoneNumber.isValid()) {
+              const cca2 = phoneNumber.country; // e.g., "US"
+              const callCode = phoneNumber.countryCallingCode; // e.g., "1"
+              const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
+
+              setCountryCode(cca2 as Country['cca2']);
+              setCallingCode(callCode as string);
+              setPhone(nationalNumber as string);
+            } else {
+              console.warn('Invalid phone number:', user.mobile);
+            }
+          }
+
+          if (user.address) {
+            setLocation(user.address);
+          }
+
+          if (user.latitude && user.longitude) {
+            setRegion({
+              latitude: user.latitude as number,
+              longitude: user.longitude as number,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            });
+            setMarker({
+              latitude: user.latitude as number,
+              longitude: user.longitude as number,
+            });
+          }
+
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -152,7 +221,7 @@ export default function UpdateProfileScreen() {
     })();
   }, []);
 
-  const handleMapPress = async (e) => {
+  const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     //console.log(coords);
     //setMarker(coords);
@@ -268,6 +337,78 @@ export default function UpdateProfileScreen() {
     }
   };
 
+  const handleUpdate = async () => {
+    try {
+      setIsLoading(true);
+
+      // Validate phone number
+      let mobile = phone ? `+${callingCode}${phone}` : '';
+      if (mobile) {
+        try {
+          const phoneNumber = parsePhoneNumber(mobile);
+          if (!phoneNumber || !phoneNumber.isValid()) {
+            Alert.alert('Validation Error', 'Invalid phone number format');
+            setIsLoading(false);
+            return;
+          }
+          console.log(phoneNumber);
+          mobile = phoneNumber.number as string;
+        } catch (error) {
+          Alert.alert('Validation Error', 'Invalid phone number');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const userData: UpdateUserData = {
+        first_name: firstName,
+        last_name: lastName,
+        mobile: mobile,
+        address: location,
+        date_of_birth: date ? date.toISOString().split('T')[0] : null,
+        nationality: nationality,
+        gender: gender.toLowerCase(),
+      };
+
+      if (marker) {
+        userData.latitude = marker.latitude;
+        userData.longitude = marker.longitude;
+      }
+
+      const response = await authService.updateUserProfile(userData);
+
+      if (response) {
+        Alert.alert('Success', 'Profile updated successfully');
+        router.push('/(tabs)/account');
+      }
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      
+      if (error.response?.status === 422) {
+        // Handle validation errors
+        const validationErrors = error.response.data.errors;
+        const errorMessages = Object.values(validationErrors)
+          .flat()
+          .join('\n');
+        
+        Alert.alert(
+          'Validation Error',
+          errorMessages,
+          [{ text: 'OK', style: 'default' }]
+        );
+      } else {
+        // Handle other errors
+        Alert.alert(
+          'Error',
+          'Failed to update profile. Please try again.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -302,7 +443,7 @@ export default function UpdateProfileScreen() {
               </TouchableOpacity>
             )}
             <Text style={styles.profileName}>{firstName} {lastName}</Text>
-            <Text style={styles.profileUserName}>@Amy23</Text>
+            <Text style={styles.profileUserName}>{email}</Text>
           </View>
 
           <Text style={styles.label}>First Name</Text>
@@ -339,7 +480,7 @@ export default function UpdateProfileScreen() {
             />
           </View>
 
-          <Text style={styles.label}>Email</Text>
+          {/* <Text style={styles.label}>Email</Text>
           <View style={styles.inputContainer}>
             <LetterIcon size={20} color={COLORS.text} />
             <TextInput 
@@ -355,7 +496,7 @@ export default function UpdateProfileScreen() {
               selectionColor={COLORS.primary}
               clearButtonMode="always"
             />
-          </View>
+          </View> */}
 
           <Text style={styles.label}>Mobile Number</Text>
           <View style={styles.inputContainer}>
@@ -410,7 +551,7 @@ export default function UpdateProfileScreen() {
                       <>
                       <MapView
                         style={{ flex: 1 }}
-                        initialRegion={region}
+                        region={region}
                         onPress={(e) => {
                           const coords = e.nativeEvent.coordinate;
                           setMarker(coords);
@@ -481,7 +622,7 @@ export default function UpdateProfileScreen() {
               <View style={styles.modalBackground}>
                 <View style={styles.modalContainer}>
                   <DateTimePicker
-                    value={date}
+                    value={date || new Date()}
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
                     onChange={handleDateChange}
@@ -550,10 +691,13 @@ export default function UpdateProfileScreen() {
       </Animated.ScrollView>
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={styles.continueButton}
-          onPress={() => router.push('/(tabs)/account')}
+          style={[styles.continueButton, isLoading && styles.disabledButton]}
+          onPress={handleUpdate}
+          disabled={isLoading}
         >
-          <Text style={styles.continueButtonText}>Update</Text>
+          <Text style={styles.continueButtonText}>
+            {isLoading ? 'Updating...' : 'Update'}
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -844,5 +988,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'nunito-bold',
     color: COLORS.text,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });

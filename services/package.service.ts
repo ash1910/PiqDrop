@@ -37,6 +37,16 @@ class PackageService {
       throw error;
     }
   }
+
+  async cancelPackage(id: string | number) {
+    try {
+      const response = await api.patch(`/packages/${id}/cancel`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to cancel package');
+    }
+  }
+
 }
 
 export const packageService = new PackageService(); 

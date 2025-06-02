@@ -15,6 +15,9 @@ import { LetterIcon } from '@/components/icons/LetterIcon';
 import { ComplexGearIcon } from '@/components/icons/ComplexGearIcon';
 import { EditIcon } from '@/components/icons/EditIcon';
 import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
+import { authService } from '@/services/auth.service';
+import api from '@/services/api';
+import { parsePhoneNumber } from 'libphonenumber-js';
 
 const HEADER_HEIGHT = 156;
 const { width, height } = Dimensions.get('window');
@@ -31,13 +34,16 @@ const COLORS = {
 };
 
 export default function ProfileScreen() {
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [countryCode, setCountryCode] = useState('SE'); //sweden 
-  const [callingCode, setCallingCode] = useState('46'); 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false); 
   const [country, setCountry] = useState<Country | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
-  const [flag, setFlag] = useState('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAMAAABpA6zvAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAJxQTFRFAEBzAD90I1NjG05nAD50AD9zHVBmG09nPGFYM1tcGk5nHE5m37sO37oO5L0M4bsN3bkP3roP5L0M/80A/8wA3LkQAEBzAD90I1Nj3LgQGk5nAD50AD9zAD51I1JkGk1oAD11578L4LsO/MoC+skC4rwN4bwN5r4L/MoB+8oC470MIFFkHlBlP2JXNl1bHU9mH1BlI1FkI1Jj////hM0NagAAABJ0Uk5T/Pz9/Pz8/v7+/v7+/v7+/v7+yMbBHgAAAAFiS0dEMzfVfF4AAAAJcEhZcwAAAEgAAABIAEbJaz4AAACNSURBVDjL7dHJDoJAEEXRh+KE4tQlqC2COA/g8P8fp0AKNxXSC+OKs75JJa8AZjWmikjNmnZLAo/58zxcLPVKUoc/Cn0WrIswjLQEbdbpbrIw7jl9CQbMHW7pYzcaTyRQX5RTMpAh89D49J4djqesO19iEa7slhTzpPeHBOWi0bN68PJH+lX9wjr8b/gGzuNz038exeMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTMtMTAtMDdUMTM6MTQ6NTYrMDI6MDCyBjBrAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDEzLTEwLTA3VDEzOjE0OjU2KzAyOjAww1uI1wAAAABJRU5ErkJggg==');
-  const [phone, setPhone] = useState('435436567');
+  const [senderProfileImage, setSenderProfileImage] = useState(require('@/assets/img/profile-blank.png'));
+  const [name, setName] = useState(''); 
+  const [email, setEmail] = useState('');
+  const [gender, setGender] = useState('');
+  const [countryCode, setCountryCode] = useState<Country['cca2']>('US');
+  const [callingCode, setCallingCode] = useState('1');
+  const [phone, setPhone] = useState('');
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
 
@@ -58,16 +64,48 @@ export default function ProfileScreen() {
     };
   });
 
-  const onSelect = (country: Country) => {
-    setCountryCode(country.cca2);
-    setCallingCode(country.callingCode[0]);
-    setCountry(country);
-    setFlag(country.flag);
-    console.log(country.flag);
-  };
-
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
+  }, []);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (user) {
+          // Set name by combining first_name and last_name
+          setName(`${user.first_name} ${user.last_name}`);
+          setEmail(user.email);
+          setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
+
+          if (user.image) {
+            const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
+            setSenderProfileImage(user.image ? {uri: `${baseURLWithoutApi}/${user.image}`} : require('@/assets/img/profile-blank.png'));
+          }
+          
+          // Set phone and country code from mobile if available
+          if (user.mobile) {
+            const phoneNumber = parsePhoneNumber(user.mobile);
+
+            if (phoneNumber && phoneNumber.isValid()) {
+              const cca2 = phoneNumber.country; // e.g., "US"
+              const callCode = phoneNumber.countryCallingCode; // e.g., "1"
+              const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
+
+              setCountryCode(cca2 as Country['cca2']);
+              setCallingCode(callCode as string);
+              setPhone(nationalNumber as string);
+            } else {
+              console.warn('Invalid phone number:', user.mobile);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+
+    loadUserData();
   }, []);
 
   useEffect(() => {
@@ -113,9 +151,13 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.editProfile} onPress={() => router.push('/updateProfile')}>
               <EditIcon size={20} />
             </TouchableOpacity>
-            <Image source={require('@/assets/images/profile_pic.jpg')} style={styles.profileImage} />
-            <Text style={styles.profileName}>Amy Jackson</Text>
-            <Text style={styles.profileUserName}>@Amy23</Text>
+            {senderProfileImage ? (  
+              <Image source={senderProfileImage} style={styles.profileImage} />
+            ) : (
+              <Image source={require('@/assets/img/profile-blank.png')} style={styles.profileImage} />
+            )}
+            <Text style={styles.profileName}>{name}</Text>
+            <Text style={styles.profileUserName}>{email}</Text>
           </View>
 
           <View style={styles.innerContainer}>
@@ -126,7 +168,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
                   <UserRoundedIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>John Doe</Text>
+                  <Text style={styles.rowLabel}>{name}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -141,7 +183,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
                   <LetterIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Md.ali453@gmail.com</Text>
+                  <Text style={styles.rowLabel}>{email}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -156,7 +198,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
                   <ComplexGearIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Male</Text>
+                  <Text style={styles.rowLabel}>{gender}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -168,17 +210,23 @@ export default function ProfileScreen() {
               <Text style={styles.sectionTitle}>Mobile</Text>
             </View>
             <View style={styles.card}>
-              <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
+              <TouchableOpacity style={[styles.row, {paddingVertical: 12}]} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
-                  {flag && (
-                    <Image 
-                      source={{ uri: flag }} 
-                      style={{ width: 24, height: 16 }}
-                    />
-                  )}
-                  <Text style={[styles.rowLabel, {marginLeft: 8}]}>+{callingCode}</Text>
+                  <CountryPicker
+                    countryCode={countryCode as Country["cca2"]}
+                    withFilter
+                    withFlag
+                    withCallingCode
+                    withAlphaFilter
+                    withCallingCodeButton
+                    onSelect={() => {}}
+                  />
                   <SelectDownArrowIcon size={16} color={COLORS.text} /> 
-                  <Text style={styles.rowLabel}>{phone}</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    editable={false}
+                  />
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -341,11 +389,10 @@ const styles = StyleSheet.create({
     height: 54,
   },
   input: {
-    flex: 1,
     marginLeft: 10,
     fontFamily: 'nunito-medium',
     fontSize: 16,
-    paddingVertical: 15,
+    paddingVertical: 0,
     color: COLORS.text,
   },
   buttonContainer: {

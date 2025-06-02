@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -14,8 +14,9 @@ import { HeadphonesRoundIcon } from '@/components/icons/HeadphonesRoundIcon';
 import { SelectUpArrowIcon } from '@/components/icons/SelectUpArrowIcon';
 import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
 import { SearchIcon } from '@/components/icons/SearchIcon';
+import api from '@/services/api';
 
-const HEADER_HEIGHT = 120;
+const HEADER_HEIGHT = 80;
 
 const COLORS = {
   primary: '#55B086',
@@ -31,60 +32,25 @@ const TABS = ['Guide', 'Tools'];
 const screenWidth = Dimensions.get('window').width;
 const TAB_WIDTH = (screenWidth - 32 - 8) / TABS.length;
 
-// FAQ data array
-const FAQS = [
-  {
-    question: 'How do I reset my password?',
-    answer: 'To reset your password, go to the login screen and tap on "Forgot Password?". Follow the instructions sent to your email.'
-  },
-  {
-    question: 'How can I contact support?',
-    answer: 'You can contact support by tapping the "Get Support" button at the bottom of this page or emailing support@example.com.'
-  },
-  {
-    question: 'Where can I find my purchase history?',
-    answer: 'Your purchase history is available in the "Account" section under "Orders".'
-  },
-  {
-    question: 'How do I update my profile information?',
-    answer: 'Go to the "Account" tab and select "Edit Profile" to update your information.'
-  },
-  {
-    question: 'Is my data secure?',
-    answer: 'Yes, we use industry-standard encryption to protect your data.'
-  },
-  {
-    question: 'Can I use the app offline?',
-    answer: 'Some features are available offline, but for the best experience, connect to the internet.'
-  },
-  {
-    question: 'How do I delete my account?',
-    answer: 'To delete your account, please contact support through the "Get Support" button.'
-  },
-  {
-    question: 'How do I enable notifications?',
-    answer: 'Enable notifications in your device settings under "Notifications".'
-  },
-  {
-    question: 'What payment methods are accepted?',
-    answer: 'We accept major credit cards, PayPal, and Apple Pay.'
-  },
-  {
-    question: 'How do I report a bug?',
-    answer: 'Report bugs by contacting support or using the feedback form in the app.'
-  },
-];
+interface FAQ {
+  title: string;
+  description: string;
+}
 
 export default function SafetyScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [activeTab, setActiveTab] = useState(0);
   const translateX = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState('');
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePress = (index: number) => {
     setActiveTab(index);
@@ -112,10 +78,33 @@ export default function SafetyScreen() {
     };
   });
 
+  const fetchFaqs = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get('/faqs');
+      if (response.data.status === 'success') {
+        setFaqs(response.data.data);
+        setError(null);
+      } else {
+        setError('Failed to load FAQs');
+      }
+    } catch (err) {
+      setError('Failed to load FAQs');
+      console.error('Error fetching FAQs:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial fetch of FAQs
+  useEffect(() => {
+    fetchFaqs();
+  }, []);
+
   // Filtered FAQs based on search
-  const filteredFaqs = FAQS.filter(faq =>
-    faq.question.toLowerCase().includes(search.toLowerCase()) ||
-    faq.answer.toLowerCase().includes(search.toLowerCase())
+  const filteredFaqs = faqs.filter(faq =>
+    faq.title.toLowerCase().includes(search.toLowerCase()) ||
+    faq.description.toLowerCase().includes(search.toLowerCase())
   );
 
   useEffect(() => {
@@ -152,7 +141,15 @@ export default function SafetyScreen() {
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            enabled={false} 
+            refreshing={false}
+            onRefresh={fetchFaqs}
+          /> 
+        }
+        >
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
@@ -177,7 +174,13 @@ export default function SafetyScreen() {
 
           {/* FAQ Accordion */}
           <View style={styles.faqContainer}>
-            {filteredFaqs.length === 0 ? (
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : filteredFaqs.length === 0 ? (
               <Text style={{color: '#BDBDBD', textAlign: 'center', marginTop: 32}}>No FAQs found.</Text>
             ) : (
               filteredFaqs.map((faq, idx) => (
@@ -187,12 +190,12 @@ export default function SafetyScreen() {
                     onPress={() => setOpenIndex(openIndex === idx ? null : idx)}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.accordionTitle}>{faq.question}</Text>
+                    <Text style={styles.accordionTitle}>{faq.title}</Text>
                     <Text style={styles.accordionIcon}>{openIndex === idx ? <SelectUpArrowIcon color={COLORS.primary} /> : <SelectDownArrowIcon color={COLORS.primary} />}</Text>
                   </TouchableOpacity>
                   {openIndex === idx && (
                     <View style={styles.accordionContent}>
-                      <Text style={styles.accordionDescription}>{faq.answer}</Text>
+                      <Text style={styles.accordionDescription}>{faq.description}</Text>
                     </View>
                   )}
                 </View>
@@ -538,5 +541,18 @@ const styles = StyleSheet.create({
     borderColor: '#EEEEEE',
     paddingTop: 12,
     marginTop: -4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    textAlign: 'center',
+    marginTop: 32,
+    fontFamily: 'nunito-medium',
+    fontSize: 16,
   },
 });

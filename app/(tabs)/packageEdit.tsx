@@ -293,6 +293,14 @@ export default function PackageEditScreen() {
   const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     setMarker(coords);
+    
+    const newRegion: Region = {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+    setRegion(newRegion);
 
     try {
       const geocode = await Location.reverseGeocodeAsync(coords);
@@ -309,28 +317,26 @@ export default function PackageEditScreen() {
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
         const address = uniqueParts.join(', ');        
         setLocation(address);
-
-        const newRegion: Region = {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        };
-        setRegion(newRegion);
       } else {
         setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
-      //setModalVisible(false);
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
       setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-      //setModalVisible(false);
     }
   };
 
   const handleMapPressDropOff = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     setMarkerDropOff(coords);
+    
+    const newRegion: Region = {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+    setRegionDropOff(newRegion);
 
     try {
       const geocode = await Location.reverseGeocodeAsync(coords);
@@ -344,25 +350,16 @@ export default function PackageEditScreen() {
           place.postalCode,
           place.country
         ];
+        console.log("parts", parts);
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
         const address = uniqueParts.join(', ');        
         setLocationDropOff(address);
-
-        const newRegion: Region = {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        };
-        setRegionDropOff(newRegion);
       } else {
         setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
-      //setModalDropOffVisible(false);
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
       setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-      //setModalDropOffVisible(false);
     }
   };
 
@@ -690,23 +687,34 @@ export default function PackageEditScreen() {
                       {/* Map View */}
                       {mode === 'map' && (
                         <>
-                          {region && (
-                            <>
-                            <MapView
-                              style={{ flex: 1 }}
-                              initialRegion={region || {
-                                latitude: 0,
-                                longitude: 0,
-                                latitudeDelta: 0.01,
-                                longitudeDelta: 0.01,
-                              }}
-                              onPress={handleMapPress}
-                            >
-                              {marker && <Marker coordinate={marker} />}
-                            </MapView>
-                            <Text style={styles.mapHint}>Tap on the map to select location</Text>
-                            </>
-                          )}
+                          <MapView
+                            key="pickup-map"
+                            style={{ flex: 1 }}
+                            region={region || {
+                              latitude: 0,
+                              longitude: 0,
+                              latitudeDelta: 0.01,
+                              longitudeDelta: 0.01,
+                            }}
+                            onPress={handleMapPress}
+                            onLayout={() => {
+                              if (marker) {
+                                setRegion({
+                                  latitude: marker.latitude,
+                                  longitude: marker.longitude,
+                                  latitudeDelta: 0.01,
+                                  longitudeDelta: 0.01,
+                                });
+                              }
+                            }}
+                          >
+                            {marker && (
+                              <Marker 
+                                coordinate={marker}
+                              />
+                            )}
+                          </MapView>
+                          <Text style={styles.mapHint}>Tap on the map to select location</Text>
                         </>
                       )}
 
@@ -905,23 +913,34 @@ export default function PackageEditScreen() {
                       {/* Map View */}
                       {mode === 'map' && (
                         <>
-                          {regionDropOff && (
-                            <>
-                            <MapView
-                              style={{ flex: 1 }}
-                              initialRegion={regionDropOff || {
-                                latitude: 0,
-                                longitude: 0,
-                                latitudeDelta: 0.01,
-                                longitudeDelta: 0.01,
-                              }}
-                              onPress={handleMapPressDropOff}
-                            >
-                              {markerDropOff && <Marker coordinate={markerDropOff} />}
-                            </MapView>
-                            <Text style={styles.mapHint}>Tap on the map to select location</Text>
-                            </>
-                          )}
+                          <MapView
+                            key="dropoff-map"
+                            style={{ flex: 1 }}
+                            region={regionDropOff || {
+                              latitude: 0,
+                              longitude: 0,
+                              latitudeDelta: 0.01,
+                              longitudeDelta: 0.01,
+                            }}
+                            onPress={handleMapPressDropOff}
+                            onLayout={() => {
+                              if (markerDropOff) {
+                                setRegionDropOff({
+                                  latitude: markerDropOff.latitude,
+                                  longitude: markerDropOff.longitude,
+                                  latitudeDelta: 0.01,
+                                  longitudeDelta: 0.01,
+                                });
+                              }
+                            }}
+                          >
+                            {markerDropOff && (
+                              <Marker 
+                                coordinate={markerDropOff}
+                              />
+                            )}
+                          </MapView>
+                          <Text style={styles.mapHint}>Tap on the map to select location</Text>
                         </>
                       )}
 

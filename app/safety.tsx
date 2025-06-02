@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -10,8 +10,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
-import { SuccessIcon } from '@/components/icons/SuccessIcon';
-import { DotIcon } from '@/components/icons/DotIcon';
+import { authService } from '@/services/auth.service';
+import api from '@/services/api';
 
 const HEADER_HEIGHT = 120;
 
@@ -33,11 +33,12 @@ export default function SafetyScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+  const [user, setUser] = useState<any | null>(null);
 
   const [activeTab, setActiveTab] = useState(0);
   const translateX = useSharedValue(0);
 
-  const handlePress = (index) => {
+  const handlePress = (index: number) => {
     setActiveTab(index);
     translateX.value = withTiming(index * TAB_WIDTH, { duration: 200 });
   };
@@ -65,7 +66,13 @@ export default function SafetyScreen() {
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
+    getUser();
   }, []);
+
+  const getUser = async () => {
+    const user = await authService.getCurrentUser();
+    setUser(user);
+  };
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -97,6 +104,7 @@ export default function SafetyScreen() {
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl enabled={false} refreshing={false} onRefresh={() => {}} />}
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
@@ -109,10 +117,14 @@ export default function SafetyScreen() {
 
           <View style={styles.senderProfileContainer}> 
             <View style={styles.senderProfileImageContainer}>
-              <Image source={require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
+              {user?.image ? (
+                <Image source={{ uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${user?.image}` }} style={styles.senderProfileImage} />
+              ) : (
+                <Image source={require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
+              )}
             </View>
             <View style={styles.senderProfileTextContainer}> 
-              <Text style={styles.title}>Hi John Doe</Text>
+              <Text style={styles.title}>Hi {user?.first_name} {user?.last_name}</Text>
             </View>
           </View>
           <Text style={styles.subtitle}>Here's what you need to know about safety</Text>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Pressable, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import Modal from 'react-native-modal';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
@@ -24,10 +24,12 @@ import { ProfileIcon } from '@/components/icons/ProfileIcon';
 import { SimpleCheckIcon } from '@/components/icons/SimpleCheckIcon';
 import { SuccessBadgeIcon } from '@/components/icons/SuccessBadgeIcon';
 import { packageListService } from '@/services/packageList.service';
+import { packageService } from '@/services/package.service';
+import { orderService } from '@/services/order.service';
 import type { Package } from '@/services/packageList.service';
 import api from '@/services/api';
 
-const HEADER_HEIGHT = 120;
+const HEADER_HEIGHT = 80;
 
 const TABS = ['On going', 'Accepted', 'Completed', 'Canceled'];
 const screenWidth = Dimensions.get('window').width;
@@ -58,14 +60,17 @@ export default function ManageScreen() {
   const [shouldOpenSecond, setShouldOpenSecond] = useState(false);
   const [shouldOpenThird, setShouldOpenThird] = useState(false);
   const [packages, setPackages] = useState<Package[]>([]);
-  const [pkg, setPkg] = useState<Package | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState(0);
   const translateX = useSharedValue(0);
 
-  const [filterBy, setFilterBy] = useState('deliveryDate');
+  const [filterBy, setFilterBy] = useState('orderDate');
+
+  const [isCanceling, setIsCanceling] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const handlePress = (index: number) => {
     setActiveTab(index);
@@ -162,7 +167,15 @@ export default function ManageScreen() {
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            enabled={false}
+            refreshing={false}
+            onRefresh={fetchPackages}
+          />
+        }
+        >
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Text style={styles.pageTitle}>My Orders</Text>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.push('/(tabs)/notification')}>
@@ -180,11 +193,11 @@ export default function ManageScreen() {
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <View style={styles.modalToggleButton}></View>
-                <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('deliveryDate')}>
+                {/* <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('deliveryDate')}>
                   <ProfileIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
                   <Text style={[styles.modalOptionText, {color: filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text}]}>Delivery date</Text>
                   <SimpleCheckIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('orderDate')}>
                   <CalendarIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
                   <Text style={[styles.modalOptionText, {color: filterBy === 'orderDate' ? COLORS.primary : COLORS.text}]}>Order date</Text>
@@ -234,10 +247,10 @@ export default function ManageScreen() {
                     <View style={styles.card} key={pkg.id}>
                       <View style={styles.cardHeader}>
                         <Text style={styles.cardTitle}>Delivery overview</Text>
-                        {pkg.order.status === 'ongoing' && (
+                        {(pkg.order.status === 'ongoing' || pkg.order.status === 'active' || pkg.order.status === 'completed') && (
                         <TouchableOpacity onPress={() => {
+                          setSelectedPackage(pkg);
                           setModalVisible(true);
-                          setPkg(pkg);
                         }}>
                           <MoreVerticalIcon size={20} />
                         </TouchableOpacity>
@@ -344,13 +357,47 @@ export default function ManageScreen() {
               <View style={styles.modalContainer}>
                 <View style={styles.modalContent}>
                   <View style={styles.modalToggleButton}></View>
-                  <TouchableOpacity style={styles.modalOption} onPress={() => {
-                    setModalVisible(false);
-                    setShouldOpenSecond(true);
-                  }}>
+                  {selectedPackage?.order.status === 'active' && (
+                   <TouchableOpacity 
+                    style={[
+                      styles.modalOption, 
+                      {borderBottomWidth: 0},
+                      isCompleting && { opacity: 0.7 }
+                    ]} 
+                    disabled={isCompleting}
+                    onPress={async () => {
+                      try {
+                        setIsCompleting(true);
+                        if (selectedPackage?.order?.id) {
+                          await orderService.updateOrderStatus(selectedPackage.order.id, { 
+                            status: 'completed'
+                          });
+                          await fetchPackages();
+                          setModalVisible(false);
+                          setShouldOpenSecond(true);
+                          handlePress(2);
+                        } else {
+                          console.error('No order ID found');
+                          Alert.alert('Error', 'Could not complete delivery. Please try again.');
+                          setModalVisible(false);
+                        }
+                      } catch (error) {
+                        console.error('Failed to complete delivery:', error);
+                        Alert.alert('Error', 'Failed to complete delivery. Please try again.');
+                      } finally {
+                        setIsCompleting(false);
+                      }
+                    }}>
                     <RoundedCheckIcon size={20} />
-                    <Text style={styles.modalOptionText}>Complete Delivery</Text>
-                  </TouchableOpacity>
+                    {isCompleting ? (
+                      <ActivityIndicator color={COLORS.text} style={styles.modalOptionText} />
+                    ) : (
+                      <Text style={styles.modalOptionText}>Complete Delivery</Text>
+                    )}
+                   </TouchableOpacity>
+                  )}
+                  {selectedPackage?.order.status === 'ongoing' && (
+                  <>
                   <TouchableOpacity style={styles.modalOption} onPress={() => {
                     setModalVisible(false);
                     setShouldOpenThird(true);
@@ -362,13 +409,31 @@ export default function ManageScreen() {
                     setModalVisible(false);
                     router.push({
                       pathname: '/(tabs)/packageEdit',
-                      params: { packageData: JSON.stringify(pkg) }
+                      params: { packageData: JSON.stringify(selectedPackage) }
                     });
                   }}>
                     <RoundedEditIcon size={20} />
                     <Text style={styles.modalOptionText}>Edit Delivery</Text>
                   </TouchableOpacity>
-                </View>
+                  </>
+                  )}
+                  {selectedPackage?.order.status === 'completed' && (
+                    <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
+                      setModalVisible(false);
+                      if (selectedPackage?.order.review_submitted) {
+                        Alert.alert('Review already submitted');
+                        return;
+                      }
+                      router.push({
+                        pathname: '/review',
+                        params: { orderData: JSON.stringify(selectedPackage) }
+                      });
+                    }}>
+                      <RoundedEditIcon size={20} />
+                      <Text style={styles.modalOptionText}>Leave a review</Text>
+                    </TouchableOpacity>
+                  )}
+                </View> 
               </View>
             </Modal>
 
@@ -387,7 +452,10 @@ export default function ManageScreen() {
                   <Text style={styles.modalDeliveryContentText}>Please, let's know about your experience and the service provided to you by the dropper. This will enable us to improve our system. Thank you for using PiqDrop!</Text>
                   <TouchableOpacity style={[styles.loginButton, { marginBottom: 14}]} onPress={() => {
                     setModalDeliveryCompletedVisible(false);
-                    router.push('../review');
+                    router.push({
+                      pathname: '/review',
+                      params: { orderData: JSON.stringify(selectedPackage) }
+                    });
                     }}>
                     <Text style={styles.loginText}>Leave a review</Text>
                   </TouchableOpacity>
@@ -412,11 +480,18 @@ export default function ManageScreen() {
                   <View style={styles.orderSummaryCard}>
                     <View style={styles.orderSummaryRow}>
                       <View style={styles.orderSummaryUserRow}>
-                        <View style={styles.userAvatar} />
+                        {selectedPackage?.sender.image ? (
+                        <Image 
+                          source={selectedPackage?.sender.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${selectedPackage.sender.image}` } : require('@/assets/img/profile-blank.png')} 
+                          style={styles.userAvatar} 
+                        />
+                        ) : (
+                          <View style={styles.userAvatar} />
+                        )}
                         <View style={styles.orderSummaryUserColumn}>
-                          <Text style={styles.orderSummaryUserName}>Marvin McKinney</Text>
+                          <Text style={styles.orderSummaryUserName}>{selectedPackage?.pickup.name}</Text>
                           <View style={styles.orderSummaryPriceBox}>
-                            <Text style={styles.orderSummaryPrice}>$20.00</Text>
+                            <Text style={styles.orderSummaryPrice}>${selectedPackage?.price}</Text>
                           </View>
                         </View>
                       </View>
@@ -425,26 +500,52 @@ export default function ManageScreen() {
 
                   <View style={styles.pickupDetailsRow}>
                     <Text style={styles.pickupDetailsLabel}>From:</Text>
-                    <Text style={styles.pickupDetailsValue}>Germany, Berlin, Danziger Str.12A 10435, BE DEU</Text>
+                    <Text style={styles.pickupDetailsValue}>{selectedPackage?.pickup.address}</Text>
                   </View>
                   <View style={styles.pickupDetailsRow}>
                     <Text style={styles.pickupDetailsLabel}>To:</Text>
-                    <Text style={styles.pickupDetailsValue}>Sweden, Gothenburg, Långströmsgatan 7, 41870.</Text>
+                    <Text style={styles.pickupDetailsValue}>{selectedPackage?.drop.address}</Text>
                   </View>
                   <View style={styles.pickupDetailsRow}>
                     <Text style={styles.pickupDetailsLabel}>Date:</Text>
-                    <Text style={styles.pickupDetailsValue}>11 apr 2025</Text>
+                    <Text style={styles.pickupDetailsValue}>{selectedPackage?.pickup.date} {selectedPackage?.pickup.time}</Text>
                   </View>
 
                   <View style={styles.modalButtonContainer}>
                     <TouchableOpacity style={[styles.modalButton, {backgroundColor: '#E6E6E6'}]} onPress={() => setModalCancelDeliveryVisible(false)}>
                       <Text style={[styles.modalButtonText, {color: COLORS.text}]}>Back</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.modalButton, { marginBottom: 14, backgroundColor: COLORS.danger}]} onPress={() => {
-                      setModalCancelDeliveryVisible(false);
-                      handlePress(3);
-                    }}>
-                      <Text style={styles.modalButtonText}>Yes Cancel !</Text>
+                    <TouchableOpacity 
+                      style={[
+                        styles.modalButton, 
+                        { marginBottom: 14, backgroundColor: COLORS.danger},
+                        isCanceling && { opacity: 0.7 }
+                      ]} 
+                      disabled={isCanceling}
+                      onPress={async () => {
+                        try {
+                          setIsCanceling(true);
+                          if (selectedPackage?.id) {
+                            await packageService.cancelPackage(selectedPackage.id);
+                            await fetchPackages();
+                            setModalCancelDeliveryVisible(false);
+                            handlePress(3);
+                          } else {
+                            console.error('No package selected');
+                            Alert.alert('Error', 'No package selected');
+                            setModalCancelDeliveryVisible(false);
+                          }
+                        } catch (error) {
+                          console.error('Failed to cancel delivery:', error);
+                        } finally {
+                          setIsCanceling(false);
+                        }
+                      }}>
+                      {isCanceling ? (
+                        <ActivityIndicator color={COLORS.buttonText} />
+                      ) : (
+                        <Text style={styles.modalButtonText}>Yes Cancel !</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
 

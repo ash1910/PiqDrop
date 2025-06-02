@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, Alert } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -37,7 +37,7 @@ export default function SafetyScreen() {
   const translateX = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handlePress = (index) => {
+  const handlePress = (index: number) => {
     setActiveTab(index);
     translateX.value = withTiming(index * TAB_WIDTH, { duration: 200 });
   };
@@ -174,17 +174,26 @@ export default function SafetyScreen() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPressOut={() => setModalVisible(false)}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Report</Text>
-            <TouchableOpacity style={styles.modalOption}>
+            <TouchableOpacity style={styles.modalOption} onPress={() => {
+              setModalVisible(false);
+              Alert.alert('An email has been sent to support@piqdrop.com');
+            }}>
               <Text style={styles.modalOptionText}>Unsolicited requests for any nude or sexual images.</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
             </TouchableOpacity>
             <View style={styles.modalDivider} />
-            <TouchableOpacity style={styles.modalOption}>
+            <TouchableOpacity style={styles.modalOption} onPress={() => {
+              setModalVisible(false);
+              Alert.alert('An email has been sent to support@piqdrop.com');
+            }}>
               <Text style={styles.modalOptionText}>Member under 18.</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
             </TouchableOpacity>
             <View style={styles.modalDivider} />
-            <TouchableOpacity style={styles.modalOption}>
+            <TouchableOpacity style={styles.modalOption} onPress={() => {
+              setModalVisible(false);
+              Alert.alert('An email has been sent to support@piqdrop.com');
+            }}>
               <Text style={styles.modalOptionText}>Spam</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
             </TouchableOpacity>

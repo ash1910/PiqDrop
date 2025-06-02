@@ -11,7 +11,7 @@ interface OrderData {
 }
 
 interface OrderStatus {
-  status: 'pending' | 'accepted' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
+  status: 'ongoing' | 'active' | 'canceled' | 'completed';
   notes?: string;
 }
 

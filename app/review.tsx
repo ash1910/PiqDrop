@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -10,6 +10,8 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { LetterIcon } from '@/components/icons/LetterIcon';
 import { StarIcon } from '@/components/icons/StarIcon';
+import { Package } from '@/services/packageList.service';
+import api from '@/services/api';
 
 const HEADER_HEIGHT = 120;
 
@@ -25,8 +27,12 @@ const COLORS = {
 };
 
 export default function ReviewScreen() {
+  const params = useLocalSearchParams();
+  const [orderData, setOrderData] = useState<Package | null>(null);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
 
@@ -50,6 +56,11 @@ export default function ReviewScreen() {
   React.useEffect(() => {
     StatusBar.setBarStyle('dark-content'); 
   }, []);
+
+  React.useEffect(() => {
+    const orderData = JSON.parse(params.orderData as string);
+    setOrderData(orderData);
+  }, [params.orderData]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -91,6 +102,39 @@ export default function ReviewScreen() {
     ));
   };
 
+  const handleSubmit = async () => {
+    if (!rating) {
+      Alert.alert('Error', 'Please select a rating');
+      return;
+    }
+
+    if (!reviewText.trim()) {
+      Alert.alert('Error', 'Please write a review');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await api.post('/reviews', {
+        order_id: orderData?.order?.id,
+        reviewee_id: orderData?.order?.dropper?.id,
+        rating: rating,
+        review_text: reviewText.trim()
+      });
+
+      if (response.data.status === 'success') {
+        Alert.alert('Success', 'Review submitted successfully');
+        router.push('/(tabs)/manage');
+      } else {
+        throw new Error(response.data.message || 'Failed to submit review');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || error.message || 'Failed to submit review');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -111,12 +155,12 @@ export default function ReviewScreen() {
         <View style={styles.form}>
           <View style={styles.senderProfileContainer}> 
             <View style={styles.senderProfileImageContainer}>
-              <Image source={require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
+              <Image source={orderData?.order?.dropper?.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${orderData.order.dropper.image}` } : require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
             </View>
             <View style={styles.senderProfileTextContainer}> 
-              <Text style={styles.title}>Gregory Smith</Text>
+              <Text style={styles.title}>{orderData?.order?.dropper?.name}</Text>
               <Text style={styles.subtitle}>Droper</Text>
-              <Text style={styles.price}>$20.00</Text>
+              <Text style={styles.price}>{orderData?.price}</Text>
             </View>
           </View>
           <View style={styles.reviewTextContainer}> 
@@ -127,16 +171,31 @@ export default function ReviewScreen() {
           </View>
           <Text style={styles.label}>Write your Review</Text> 
           <View style={styles.inputContainer}> 
-            <TextInput multiline={false} placeholder="Enter Review" style={styles.input} /> 
+            <TextInput 
+              multiline={true}
+              placeholder="Enter Review" 
+              style={styles.input}
+              value={reviewText}
+              onChangeText={setReviewText}
+              onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
+            /> 
           </View>
         </View>
         {isKeyboardVisible && (
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} onPress={() => router.push('/(tabs)/manage')}>
+            <TouchableOpacity 
+              style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} 
+              onPress={() => router.push('/(tabs)/manage')}
+              disabled={isSubmitting}
+            >
               <Text style={[styles.loginText, {color: COLORS.text}]}>Maybe later</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.loginButton, { marginBottom: 14}]} onPress={() => alert('Submitted review')}>
-              <Text style={styles.loginText}>Submit review</Text>
+            <TouchableOpacity 
+              style={[styles.loginButton, { marginBottom: 14}]} 
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.loginText}>{isSubmitting ? 'Submitting...' : 'Submit review'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -144,11 +203,19 @@ export default function ReviewScreen() {
 
       {!isKeyboardVisible && (
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} onPress={() => router.push('/(tabs)/manage')}>
+          <TouchableOpacity 
+            style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} 
+            onPress={() => router.push('/(tabs)/manage')}
+            disabled={isSubmitting}
+          >
             <Text style={[styles.loginText, {color: COLORS.text}]}>Maybe later</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.loginButton, { marginBottom: 14}]} onPress={() => alert('Submitted review')}>
-            <Text style={styles.loginText}>Submit review</Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, { marginBottom: 14}]} 
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.loginText}>{isSubmitting ? 'Submitting...' : 'Submit review'}</Text>
           </TouchableOpacity>
         </View>
       )}

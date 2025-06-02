@@ -38,7 +38,9 @@ export interface Package {
     dropper?: {
       id: number;
       name: string;
+      image: string;
     };
+    review_submitted?: boolean;
     created_at?: string;
     updated_at?: string;
   };

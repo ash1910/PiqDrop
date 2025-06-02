@@ -29,6 +29,7 @@ import { LocationIcon } from '@/components/icons/LocationIcon';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { authService } from '@/services/auth.service';
+import api from '@/services/api';
 
 const HEADER_HEIGHT = 156;
 const { width } = Dimensions.get('window');
@@ -88,6 +89,7 @@ export default function AccountScreen() {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [user, setUser] = useState<any | null>(null);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -108,7 +110,13 @@ export default function AccountScreen() {
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
+    getUser();
   }, []);
+
+  const getUser = async () => {
+    const user = await authService.getCurrentUser();
+    setUser(user);
+  };
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -226,9 +234,13 @@ export default function AccountScreen() {
 
         <View style={styles.form}>
           <View style={styles.profileInfoRow}>
-            <Image source={require('@/assets/images/profile_pic.jpg')} style={styles.profileImage} />
-            <Text style={styles.profileName}>Amy Jackson</Text>
-            <Text style={styles.profileUserName}>@Amy23</Text>
+            {user?.image ? (
+              <Image source={{ uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${user?.image}` }} style={styles.profileImage} />
+            ) : (
+              <Image source={require('@/assets/img/profile-blank.png')} style={styles.profileImage} />
+            )}
+            <Text style={styles.profileName}>{user?.first_name} {user?.last_name}</Text>
+            <Text style={styles.profileUserName}>{user?.email}</Text>
           </View>
 
           <View style={styles.innerContainer}>
