@@ -110,10 +110,10 @@ export default {
     mapHint: 'Нажмите на карту, чтобы выбрать место',
     dropoff: 'Доставка',
     validation: {
-      pickupNameRequired: 'Требуется имя получателя',
-      pickupPhoneRequired: 'Требуется номер телефона получателя',
-      invalidPickupPhone: 'Недействительный номер телефона получателя',
-      pickupLocationRequired: 'Требуется место получения',
+      pickupNameRequired: 'Требуется имя отправителя',
+      pickupPhoneRequired: 'Требуется номер телефона отправителя',
+      invalidPickupPhone: 'Недействительный номер телефона отправителя',
+      pickupLocationRequired: 'Требуется место отправления',
       weightRequired: 'Требуется вес',
       invalidWeight: 'Недействительное значение веса',
       priceRequired: 'Требуется цена',
@@ -122,8 +122,10 @@ export default {
       receiverNameRequired: 'Требуется имя получателя',
       receiverPhoneRequired: 'Требуется номер телефона получателя',
       invalidReceiverPhone: 'Недействительный номер телефона получателя',
-      receiverLocationRequired: 'Требуется место получения',
-      fixErrors: 'Пожалуйста, исправьте следующие ошибки'
+      receiverLocationRequired: 'Требуется место доставки',
+      fixErrors: 'Пожалуйста, исправьте следующие ошибки',
+      jobPostedSuccess: 'Задание успешно опубликовано',
+      createPackageError: 'Не удалось создать посылку. Пожалуйста, попробуйте снова.'
     },
     updateSuccess: 'Посылка успешно обновлена',
     createSuccess: 'Посылка успешно создана',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'Завершить доставку',
       cancelDelivery: 'Отменить доставку',
       editDelivery: 'Редактировать доставку',
-      leaveReview: 'Оставить отзыв'
+      leaveReview: 'Оставить отзыв',
+      sendMessage: 'Отправить сообщение'
     },
     deliveryCompleted: {
       title: 'Доставка завершена!',

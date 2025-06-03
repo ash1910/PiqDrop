@@ -12,7 +12,7 @@ import { SuccessIcon } from '@/components/icons/SuccessIcon';
 import { DotIcon } from '@/components/icons/DotIcon';
 import { useTranslation } from 'react-i18next';
 
-const HEADER_HEIGHT = 120;
+const HEADER_HEIGHT = 80;
 
 const COLORS = {
   primary: '#55B086',

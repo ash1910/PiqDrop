@@ -261,7 +261,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (error) {
       Alert.alert(
-        'Validation Error',
+        t('common.error'),
         error,
         [
           { text: 'OK', onPress: () => setError(null) }
@@ -357,43 +357,43 @@ export default function HomeScreen() {
       const validationErrors = [];
 
       if (!name.trim()) {
-        validationErrors.push('Pickup name is required');
+        validationErrors.push(t('packageForm.validation.pickupNameRequired'));
       }
 
       // Validate pickup phone number
       var pickup_mobile = `+${callingCode}${phone.trim()}`;
       if (!phone.trim()) {
-        validationErrors.push('Pickup mobile number is required');
+        validationErrors.push(t('packageForm.validation.pickupPhoneRequired'));
       } else {
         try {
           const pickupPhoneNumber = parsePhoneNumber(pickup_mobile);
           if (!pickupPhoneNumber || !pickupPhoneNumber.isValid()) {
-            validationErrors.push('Invalid pickup phone number format');
+            validationErrors.push(t('packageForm.validation.invalidPickupPhone'));
           }
           else{
             pickup_mobile = pickupPhoneNumber.number;
           }
         } catch (error) {
-          validationErrors.push('Invalid pickup phone number');
+          validationErrors.push(t('packageForm.validation.invalidPickupPhone'));
         }
       }
 
       if (!location.trim()) {
-        validationErrors.push('Pickup location is required');
+        validationErrors.push(t('packageForm.validation.pickupLocationRequired'));
       }
 
       if (!weight){
-        validationErrors.push('Weight is required');
+        validationErrors.push(t('packageForm.validation.weightRequired'));
       }
       else if (isNaN(parseFloat(weight)) || parseFloat(weight) < 0.01) {
-        validationErrors.push('Weight must be a number');
+        validationErrors.push(t('packageForm.validation.weightMustBeNumber'));
       }
 
       if (!price){
-        validationErrors.push('Price is required');
+        validationErrors.push(t('packageForm.validation.priceRequired'));
       }
       else if (isNaN(parseFloat(price)) || parseFloat(price) < 0.01) {
-        validationErrors.push('Price must be a number');
+        validationErrors.push(t('packageForm.validation.priceMustBeNumber'));
       }
 
       // Validate pickup date is today or future
@@ -402,7 +402,7 @@ export default function HomeScreen() {
       const pickupDate = new Date(date);
       pickupDate.setHours(0, 0, 0, 0);
       if (pickupDate < today) {
-        validationErrors.push('Pickup date must be today or a future date');
+        validationErrors.push(t('packageForm.validation.pickupDateFuture'));
       }
 
       if (!nameDropOff.trim()) {
@@ -410,34 +410,34 @@ export default function HomeScreen() {
           console.log('switchTab');
           switchTab('dropoff');
         }
-        validationErrors.push('Receiver name is required');
+        validationErrors.push(t('packageForm.validation.receiverNameRequired'));
       }
 
       // Validate drop-off phone number
       var dropOff_mobile = `+${callingCodeDropOff}${phoneDropOff.trim()}`;
       if (!phoneDropOff.trim()) {
-        validationErrors.push('Receiver mobile number is required');
+        validationErrors.push(t('packageForm.validation.receiverPhoneRequired'));
       } else {
         try {
           const dropOffPhoneNumber = parsePhoneNumber(dropOff_mobile);
           if (!dropOffPhoneNumber || !dropOffPhoneNumber.isValid()) {
-            validationErrors.push('Invalid receiver phone number format');
+            validationErrors.push(t('packageForm.validation.invalidReceiverPhone'));
           }
           else{
             dropOff_mobile = dropOffPhoneNumber.number;
           }
         } catch (error) {
-          validationErrors.push('Invalid receiver phone number');
+          validationErrors.push(t('packageForm.validation.invalidReceiverPhone'));
         }
       }
 
       if (!locationDropOff.trim()) {
-        validationErrors.push('Receiver location is required');
+        validationErrors.push(t('packageForm.validation.receiverLocationRequired'));
       }
 
       // If there are validation errors, show them all
       if (validationErrors.length > 0) {
-        setError('Please fix the following errors:\n\n• ' + validationErrors.join('\n• '));
+        setError(t('packageForm.validation.fixErrors') + '\n\n• ' + validationErrors.join('\n• '));
         return;
       }
 
@@ -498,9 +498,9 @@ export default function HomeScreen() {
         params: { orderData: JSON.stringify(response.data) }
       });
       console.log("response.data", response.data);
-      Alert.alert('Job posted successfully');
+      Alert.alert(t('common.success'), t('packageForm.validation.jobPostedSuccess'));
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to create package. Please try again.');
+      setError(err.response?.data?.message || err.message || t('packageForm.validation.createPackageError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -751,7 +751,7 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                       </View>
                       <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 220, alignSelf: 'center'}]} 
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
                           onPress={() => setModalVisible(false)}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
@@ -972,7 +972,7 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                       </View>
                       <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 220, alignSelf: 'center'}]} 
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
                           onPress={() => setModalDropOffVisible(false)}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
@@ -1262,6 +1262,7 @@ const styles = StyleSheet.create({
     fontFamily: 'nunito-bold',
     fontSize: 16,
     letterSpacing: 0.2,
+    textAlign: 'center',
   },
   sliderContainer: {
     width: '100%',

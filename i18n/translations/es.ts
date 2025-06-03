@@ -110,9 +110,9 @@ export default {
     mapHint: 'Toca el mapa para seleccionar la ubicación',
     dropoff: 'Entrega',
     validation: {
-      pickupNameRequired: 'El nombre de recogida es obligatorio',
-      pickupPhoneRequired: 'El número de teléfono de recogida es obligatorio',
-      invalidPickupPhone: 'Número de teléfono de recogida inválido',
+      pickupNameRequired: 'El nombre del remitente es obligatorio',
+      pickupPhoneRequired: 'El número de teléfono del remitente es obligatorio',
+      invalidPickupPhone: 'Número de teléfono del remitente inválido',
       pickupLocationRequired: 'La ubicación de recogida es obligatoria',
       weightRequired: 'El peso es obligatorio',
       invalidWeight: 'Valor de peso inválido',
@@ -123,7 +123,9 @@ export default {
       receiverPhoneRequired: 'El número de teléfono del destinatario es obligatorio',
       invalidReceiverPhone: 'Número de teléfono del destinatario inválido',
       receiverLocationRequired: 'La ubicación de entrega es obligatoria',
-      fixErrors: 'Por favor, corrija los siguientes errores'
+      fixErrors: 'Por favor corrija los siguientes errores',
+      jobPostedSuccess: 'Trabajo publicado con éxito',
+      createPackageError: 'Error al crear el paquete. Por favor, inténtelo de nuevo.'
     },
     updateSuccess: 'Paquete actualizado exitosamente',
     createSuccess: 'Paquete creado exitosamente',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'Completar Entrega',
       cancelDelivery: 'Cancelar Entrega',
       editDelivery: 'Editar Entrega',
-      leaveReview: 'Dejar una reseña'
+      leaveReview: 'Dejar una reseña',
+      sendMessage: 'Enviar mensaje'
     },
     deliveryCompleted: {
       title: '¡Entrega completada!',

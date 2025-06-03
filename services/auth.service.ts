@@ -31,7 +31,7 @@ interface ResetPasswordData {
 }
 
 export interface SettingsData {
-  language?: 'en' | 'es';
+  language?: string;
   place?: {
     pickup?: {
       address?: string;
@@ -294,12 +294,20 @@ class AuthService {
     }
   }
 
-  async updateUserSettings(settings: SettingsData) {
+  async updateUserSettings(newSettings: SettingsData) {
     try {
-      const response = await api.post('/update-settings', settings);
-      const { user } = response.data;
+      const response = await api.post('/update-settings', {
+        settings: newSettings
+      });
 
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+      // Get current user from storage
+      const user = await this.getCurrentUser();
+      if (user) {
+        // Update user's settings
+        user.settings = response.data.settings;
+        // Save updated user back to storage
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+      }
 
       return user;
     } catch (error: any) {

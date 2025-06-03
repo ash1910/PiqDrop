@@ -39,6 +39,7 @@ export interface Package {
       id: number;
       name: string;
       image: string;
+      mobile: string;
     };
     review_submitted?: boolean;
     created_at?: string;

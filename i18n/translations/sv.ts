@@ -110,20 +110,22 @@ export default {
     mapHint: 'Tryck på kartan för att välja plats',
     dropoff: 'Avlämning',
     validation: {
-      pickupNameRequired: 'Upphämtarens namn krävs',
-      pickupPhoneRequired: 'Upphämtarens telefonnummer krävs',
-      invalidPickupPhone: 'Ogiltigt telefonnummer för upphämtare',
+      pickupNameRequired: 'Avsändarens namn krävs',
+      pickupPhoneRequired: 'Avsändarens telefonnummer krävs',
+      invalidPickupPhone: 'Ogiltigt telefonnummer för avsändare',
       pickupLocationRequired: 'Upphämtningsplats krävs',
       weightRequired: 'Vikt krävs',
       invalidWeight: 'Ogiltigt viktvärde',
       priceRequired: 'Pris krävs',
       invalidPrice: 'Ogiltigt prisvärde',
-      invalidDate: 'Ogiltigt datum - måste vara idag eller senare',
+      invalidDate: 'Ogiltigt datum - måste vara idag eller i framtiden',
       receiverNameRequired: 'Mottagarens namn krävs',
       receiverPhoneRequired: 'Mottagarens telefonnummer krävs',
       invalidReceiverPhone: 'Ogiltigt telefonnummer för mottagare',
-      receiverLocationRequired: 'Mottagarens plats krävs',
-      fixErrors: 'Vänligen åtgärda följande fel'
+      receiverLocationRequired: 'Leveransplats krävs',
+      fixErrors: 'Vänligen åtgärda följande fel',
+      jobPostedSuccess: 'Jobb publicerat framgångsrikt',
+      createPackageError: 'Kunde inte skapa paket. Vänligen försök igen.'
     },
     updateSuccess: 'Paket uppdaterat framgångsrikt',
     createSuccess: 'Paket skapat framgångsrikt',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'Slutför leverans',
       cancelDelivery: 'Avbryt leverans',
       editDelivery: 'Redigera leverans',
-      leaveReview: 'Lämna omdöme'
+      leaveReview: 'Lämna en recension',
+      sendMessage: 'Skicka meddelande'
     },
     deliveryCompleted: {
       title: 'Leverans slutförd!',

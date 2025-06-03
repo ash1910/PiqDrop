@@ -112,6 +112,7 @@ export default function AccountScreen() {
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
+    getLanguage();
   }, []);
 
   useFocusEffect(
@@ -123,12 +124,15 @@ export default function AccountScreen() {
   const getUser = async () => {
     const user = await authService.getCurrentUser();
     setUser(user);
+  };
+
+  const getLanguage = async () => {
+    const user = await authService.getCurrentUser();
 
     // Load saved language from user settings
     if (user?.settings) {
       const settings = typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings;
       if (settings.language && SUPPORTED_LANGUAGES.some(lang => lang.code === settings.language)) {
-        await i18n.changeLanguage(settings.language);
         setSelectedLanguage(settings.language);
       }
     }
@@ -231,9 +235,8 @@ export default function AccountScreen() {
           }
         };
 
-        await api.post('/update-settings', {
-          settings: updatedSettings
-        });
+        const updatedUser = await authService.updateUserSettings(updatedSettings);
+        setUser(updatedUser);
 
         // Update local state
         setSavedPlaces(prev => ({
@@ -381,14 +384,13 @@ export default function AccountScreen() {
         };
 
         // Update i18n and local state
-        await i18n.changeLanguage(language);
+        await i18n.changeLanguage(language); 
         setSelectedLanguage(language);
         setShowLanguageModal(false);
 
         // Save to server
-        await api.post('/update-settings', {
-          settings: updatedSettings
-        });
+        const updatedUser = await authService.updateUserSettings(updatedSettings);
+        setUser(updatedUser);
       }
     } catch (error) {
       console.error('Error changing language:', error);

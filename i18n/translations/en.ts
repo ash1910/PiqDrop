@@ -123,7 +123,9 @@ export default {
       receiverPhoneRequired: 'Receiver phone number is required',
       invalidReceiverPhone: 'Invalid receiver phone number',
       receiverLocationRequired: 'Receiver location is required',
-      fixErrors: 'Please fix the following errors'
+      fixErrors: 'Please fix the following errors',
+      jobPostedSuccess: 'Job posted successfully',
+      createPackageError: 'Failed to create package. Please try again.'
     },
     updateSuccess: 'Package updated successfully',
     createSuccess: 'Package created successfully',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'Complete Delivery',
       cancelDelivery: 'Cancel Delivery',
       editDelivery: 'Edit Delivery',
-      leaveReview: 'Leave a review'
+      leaveReview: 'Leave a review',
+      sendMessage: 'Send message'
     },
     deliveryCompleted: {
       title: 'Delivery completed!',

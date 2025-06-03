@@ -110,20 +110,22 @@ export default {
     mapHint: '地図をタップして場所を選択',
     dropoff: '配達',
     validation: {
-      pickupNameRequired: '受け取り人の名前が必要です',
-      pickupPhoneRequired: '受け取り人の電話番号が必要です',
-      invalidPickupPhone: '無効な受け取り人の電話番号です',
-      pickupLocationRequired: '受け取り場所が必要です',
-      weightRequired: '重量が必要です',
-      invalidWeight: '無効な重量の値です',
-      priceRequired: '価格が必要です',
-      invalidPrice: '無効な価格の値です',
-      invalidDate: '無効な日付です - 今日以降の日付である必要があります',
-      receiverNameRequired: '受取人の名前が必要です',
-      receiverPhoneRequired: '受取人の電話番号が必要です',
-      invalidReceiverPhone: '無効な受取人の電話番号です',
-      receiverLocationRequired: '受取人の場所が必要です',
-      fixErrors: '以下のエラーを修正してください'
+      pickupNameRequired: '送り主の名前は必須です',
+      pickupPhoneRequired: '送り主の電話番号は必須です',
+      invalidPickupPhone: '送り主の電話番号が無効です',
+      pickupLocationRequired: '集荷場所は必須です',
+      weightRequired: '重量は必須です',
+      invalidWeight: '無効な重量値です',
+      priceRequired: '価格は必須です',
+      invalidPrice: '無効な価格値です',
+      invalidDate: '無効な日付 - 今日以降の日付である必要があります',
+      receiverNameRequired: '受取人の名前は必須です',
+      receiverPhoneRequired: '受取人の電話番号は必須です',
+      invalidReceiverPhone: '受取人の電話番号が無効です',
+      receiverLocationRequired: '配達先は必須です',
+      fixErrors: '以下のエラーを修正してください',
+      jobPostedSuccess: '仕事が正常に投稿されました',
+      createPackageError: 'パッケージの作成に失敗しました。もう一度お試しください。'
     },
     updateSuccess: '荷物が正常に更新されました',
     createSuccess: '荷物が正常に作成されました',
@@ -163,10 +165,11 @@ export default {
       canceled: 'キャンセル済み'
     },
     actions: {
-      completeDelivery: '配達を完了',
-      cancelDelivery: '配達をキャンセル',
-      editDelivery: '配達を編集',
-      leaveReview: 'レビューを残す'
+      completeDelivery: '配達完了',
+      cancelDelivery: '配達キャンセル',
+      editDelivery: '配達編集',
+      leaveReview: 'レビューを書く',
+      sendMessage: 'メッセージを送る'
     },
     deliveryCompleted: {
       title: '配達完了！',

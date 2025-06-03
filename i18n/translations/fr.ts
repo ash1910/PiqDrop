@@ -110,10 +110,10 @@ export default {
     mapHint: 'Appuyez sur la carte pour sélectionner un lieu',
     dropoff: 'Livraison',
     validation: {
-      pickupNameRequired: 'Le nom du ramasseur est requis',
-      pickupPhoneRequired: 'Le numéro de téléphone du ramasseur est requis',
-      invalidPickupPhone: 'Numéro de téléphone du ramasseur invalide',
-      pickupLocationRequired: 'Le lieu de ramassage est requis',
+      pickupNameRequired: 'Le nom de l\'expéditeur est requis',
+      pickupPhoneRequired: 'Le numéro de téléphone de l\'expéditeur est requis',
+      invalidPickupPhone: 'Numéro de téléphone de l\'expéditeur invalide',
+      pickupLocationRequired: 'L\'emplacement de ramassage est requis',
       weightRequired: 'Le poids est requis',
       invalidWeight: 'Valeur de poids invalide',
       priceRequired: 'Le prix est requis',
@@ -122,8 +122,10 @@ export default {
       receiverNameRequired: 'Le nom du destinataire est requis',
       receiverPhoneRequired: 'Le numéro de téléphone du destinataire est requis',
       invalidReceiverPhone: 'Numéro de téléphone du destinataire invalide',
-      receiverLocationRequired: 'Le lieu du destinataire est requis',
-      fixErrors: 'Veuillez corriger les erreurs suivantes'
+      receiverLocationRequired: 'L\'emplacement de livraison est requis',
+      fixErrors: 'Veuillez corriger les erreurs suivantes',
+      jobPostedSuccess: 'Travail publié avec succès',
+      createPackageError: 'Échec de la création du colis. Veuillez réessayer.'
     },
     updateSuccess: 'Colis mis à jour avec succès',
     createSuccess: 'Colis créé avec succès',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'Terminer la livraison',
       cancelDelivery: 'Annuler la livraison',
       editDelivery: 'Modifier la livraison',
-      leaveReview: 'Laisser un avis'
+      leaveReview: 'Laisser un avis',
+      sendMessage: 'Envoyer un message'
     },
     deliveryCompleted: {
       title: 'Livraison terminée !',

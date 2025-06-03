@@ -110,20 +110,22 @@ export default {
     mapHint: 'Toque no mapa para selecionar o local',
     dropoff: 'Entrega',
     validation: {
-      pickupNameRequired: 'Nome da coleta é obrigatório',
-      pickupPhoneRequired: 'Telefone da coleta é obrigatório',
-      invalidPickupPhone: 'Telefone da coleta inválido',
-      pickupLocationRequired: 'Local da coleta é obrigatório',
+      pickupNameRequired: 'Nome do remetente é obrigatório',
+      pickupPhoneRequired: 'Número de telefone do remetente é obrigatório',
+      invalidPickupPhone: 'Número de telefone do remetente inválido',
+      pickupLocationRequired: 'Local de coleta é obrigatório',
       weightRequired: 'Peso é obrigatório',
       invalidWeight: 'Valor de peso inválido',
       priceRequired: 'Preço é obrigatório',
       invalidPrice: 'Valor de preço inválido',
-      invalidDate: 'Data inválida - deve ser hoje ou futuro',
+      invalidDate: 'Data inválida - deve ser hoje ou no futuro',
       receiverNameRequired: 'Nome do destinatário é obrigatório',
-      receiverPhoneRequired: 'Telefone do destinatário é obrigatório',
-      invalidReceiverPhone: 'Telefone do destinatário inválido',
-      receiverLocationRequired: 'Local do destinatário é obrigatório',
-      fixErrors: 'Por favor, corrija os seguintes erros'
+      receiverPhoneRequired: 'Número de telefone do destinatário é obrigatório',
+      invalidReceiverPhone: 'Número de telefone do destinatário inválido',
+      receiverLocationRequired: 'Local de entrega é obrigatório',
+      fixErrors: 'Por favor, corrija os seguintes erros',
+      jobPostedSuccess: 'Trabalho publicado com sucesso',
+      createPackageError: 'Falha ao criar pacote. Por favor, tente novamente.'
     },
     updateSuccess: 'Pacote atualizado com sucesso',
     createSuccess: 'Pacote criado com sucesso',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'Concluir Entrega',
       cancelDelivery: 'Cancelar Entrega',
       editDelivery: 'Editar Entrega',
-      leaveReview: 'Deixar Avaliação'
+      leaveReview: 'Deixar Avaliação',
+      sendMessage: 'Enviar mensagem'
     },
     deliveryCompleted: {
       title: 'Entrega concluída!',

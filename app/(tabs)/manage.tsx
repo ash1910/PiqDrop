@@ -20,6 +20,7 @@ import { DistanceIcon } from '@/components/icons/DistanceIcon';
 import { MapIcon } from '@/components/icons/MapIcon';
 import { VerticalDashedLineIcon } from '@/components/icons/VerticalDashedLineIcon';
 import { CalendarIcon } from '@/components/icons/CalendarDateIcon';
+import { MessageIcon } from '@/components/icons/MessageIcon';
 import { ProfileIcon } from '@/components/icons/ProfileIcon';
 import { SimpleCheckIcon } from '@/components/icons/SimpleCheckIcon';
 import { SuccessBadgeIcon } from '@/components/icons/SuccessBadgeIcon';
@@ -169,6 +170,37 @@ export default function ManageScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <Animated.View style={[styles.header]}>
+        <Text style={styles.pageTitle}>{t('managePage.title')}</Text>
+        <TouchableOpacity style={styles.leftArrow} onPress={() => router.push('/(tabs)/notification')}>
+          <BellIcon size={44} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.leftArrow} onPress={() => setModalFilterVisible(true)}>
+          <SocialShareIcon size={44} />
+        </TouchableOpacity>
+        <Modal
+          isVisible={modalFilterVisible}  
+          onSwipeComplete={() => setModalFilterVisible(false)}
+          swipeDirection="down"
+          style={{ justifyContent: 'flex-end', margin: 0 }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalToggleButton}></View>
+              {/* <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('deliveryDate')}>
+                <ProfileIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
+                <Text style={[styles.modalOptionText, {color: filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text}]}>Delivery date</Text>
+                <SimpleCheckIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
+              </TouchableOpacity> */}
+              <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('orderDate')}>
+                <CalendarIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
+                <Text style={[styles.modalOptionText, {color: filterBy === 'orderDate' ? COLORS.primary : COLORS.text}]}>Order date</Text>
+                <SimpleCheckIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </Animated.View>
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
@@ -177,44 +209,12 @@ export default function ManageScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            enabled={false}
+            tintColor={COLORS.primary}
             refreshing={false}
             onRefresh={fetchPackages}
           />
         }
         >
-        <Animated.View style={[styles.header, headerAnimatedStyle]}>
-          <Text style={styles.pageTitle}>{t('managePage.title')}</Text>
-          <TouchableOpacity style={styles.leftArrow} onPress={() => router.push('/(tabs)/notification')}>
-            <BellIcon size={44} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.leftArrow} onPress={() => setModalFilterVisible(true)}>
-            <SocialShareIcon size={44} />
-          </TouchableOpacity>
-          <Modal
-            isVisible={modalFilterVisible}  
-            onSwipeComplete={() => setModalFilterVisible(false)}
-            swipeDirection="down"
-            style={{ justifyContent: 'flex-end', margin: 0 }}
-          >
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalToggleButton}></View>
-                {/* <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('deliveryDate')}>
-                  <ProfileIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
-                  <Text style={[styles.modalOptionText, {color: filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text}]}>Delivery date</Text>
-                  <SimpleCheckIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
-                </TouchableOpacity> */}
-                <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('orderDate')}>
-                  <CalendarIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
-                  <Text style={[styles.modalOptionText, {color: filterBy === 'orderDate' ? COLORS.primary : COLORS.text}]}>Order date</Text>
-                  <SimpleCheckIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        </Animated.View>
-
         <View style={styles.tabContainer}>
           {/* Tab Bar */}
           <View style={styles.tabBar}>
@@ -365,10 +365,10 @@ export default function ManageScreen() {
                 <View style={styles.modalContent}>
                   <View style={styles.modalToggleButton}></View>
                   {selectedPackage?.order.status === 'active' && (
+                    <>
                    <TouchableOpacity 
                     style={[
                       styles.modalOption, 
-                      {borderBottomWidth: 0},
                       isCompleting && { opacity: 0.7 }
                     ]} 
                     disabled={isCompleting}
@@ -402,6 +402,17 @@ export default function ManageScreen() {
                       <Text style={styles.modalOptionText}>{t('managePage.actions.completeDelivery')}</Text>
                     )}
                    </TouchableOpacity>
+                   <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
+                    setModalVisible(false);
+                    router.push({
+                      pathname: '/(tabs)/message',
+                      params: { userId: selectedPackage?.order.dropper?.id, userName: selectedPackage?.order.dropper?.name, userImage: selectedPackage?.order.dropper?.image, userMobile: selectedPackage?.order.dropper?.mobile }
+                    });
+                  }}>
+                    <MessageIcon size={24} color={COLORS.text} />
+                    <Text style={styles.modalOptionText}>{t('managePage.actions.sendMessage')}</Text>
+                  </TouchableOpacity>
+                  </>
                   )}
                   {selectedPackage?.order.status === 'ongoing' && (
                   <>
@@ -425,7 +436,8 @@ export default function ManageScreen() {
                   </>
                   )}
                   {selectedPackage?.order.status === 'completed' && (
-                    <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
+                    <>
+                    <TouchableOpacity style={styles.modalOption} onPress={() => {
                       setModalVisible(false);
                       if (selectedPackage?.order.review_submitted) {
                         Alert.alert('Review already submitted');
@@ -439,6 +451,17 @@ export default function ManageScreen() {
                       <RoundedEditIcon size={20} />
                       <Text style={styles.modalOptionText}>{t('managePage.actions.leaveReview')}</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
+                      setModalVisible(false);
+                      router.push({
+                        pathname: '/(tabs)/message',
+                        params: { userId: selectedPackage?.order.dropper?.id, userName: selectedPackage?.order.dropper?.name, userImage: selectedPackage?.order.dropper?.image, userMobile: selectedPackage?.order.dropper?.mobile }
+                      });
+                    }}>
+                      <MessageIcon size={24} color={COLORS.text} />
+                      <Text style={styles.modalOptionText}>{t('managePage.actions.sendMessage')}</Text>
+                    </TouchableOpacity>
+                    </>
                   )}
                 </View> 
               </View>
@@ -638,6 +661,7 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     letterSpacing: -0.2,
     lineHeight: 16,
+    textAlign: 'center',
   },
   activeTabText: {
     color: COLORS.background,

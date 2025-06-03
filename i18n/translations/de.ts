@@ -110,20 +110,22 @@ export default {
     mapHint: 'Tippen Sie auf die Karte, um einen Ort auszuwählen',
     dropoff: 'Abgabe',
     validation: {
-      pickupNameRequired: 'Name des Abholers erforderlich',
-      pickupPhoneRequired: 'Telefonnummer des Abholers erforderlich',
-      invalidPickupPhone: 'Ungültige Telefonnummer des Abholers',
-      pickupLocationRequired: 'Abholort erforderlich',
-      weightRequired: 'Gewicht erforderlich',
+      pickupNameRequired: 'Name des Absenders ist erforderlich',
+      pickupPhoneRequired: 'Telefonnummer des Absenders ist erforderlich',
+      invalidPickupPhone: 'Ungültige Telefonnummer des Absenders',
+      pickupLocationRequired: 'Abholort ist erforderlich',
+      weightRequired: 'Gewicht ist erforderlich',
       invalidWeight: 'Ungültiger Gewichtswert',
-      priceRequired: 'Preis erforderlich',
+      priceRequired: 'Preis ist erforderlich',
       invalidPrice: 'Ungültiger Preiswert',
-      invalidDate: 'Ungültiges Datum - muss heute oder später sein',
-      receiverNameRequired: 'Name des Empfängers erforderlich',
-      receiverPhoneRequired: 'Telefonnummer des Empfängers erforderlich',
+      invalidDate: 'Ungültiges Datum - muss heute oder in der Zukunft sein',
+      receiverNameRequired: 'Name des Empfängers ist erforderlich',
+      receiverPhoneRequired: 'Telefonnummer des Empfängers ist erforderlich',
       invalidReceiverPhone: 'Ungültige Telefonnummer des Empfängers',
-      receiverLocationRequired: 'Ort des Empfängers erforderlich',
-      fixErrors: 'Bitte beheben Sie die folgenden Fehler'
+      receiverLocationRequired: 'Lieferort ist erforderlich',
+      fixErrors: 'Bitte korrigieren Sie die folgenden Fehler',
+      jobPostedSuccess: 'Auftrag erfolgreich veröffentlicht',
+      createPackageError: 'Fehler beim Erstellen des Pakets. Bitte versuchen Sie es erneut.'
     },
     updateSuccess: 'Paket erfolgreich aktualisiert',
     createSuccess: 'Paket erfolgreich erstellt',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'Lieferung abschließen',
       cancelDelivery: 'Lieferung stornieren',
       editDelivery: 'Lieferung bearbeiten',
-      leaveReview: 'Bewertung abgeben'
+      leaveReview: 'Bewertung abgeben',
+      sendMessage: 'Nachricht senden'
     },
     deliveryCompleted: {
       title: 'Lieferung abgeschlossen!',

@@ -110,20 +110,22 @@ export default {
     mapHint: 'انقر على الخريطة لاختيار الموقع',
     dropoff: 'التسليم',
     validation: {
-      pickupNameRequired: 'اسم الاستلام مطلوب',
-      pickupPhoneRequired: 'رقم هاتف الاستلام مطلوب',
-      invalidPickupPhone: 'رقم هاتف استلام غير صالح',
+      pickupNameRequired: 'اسم المرسل مطلوب',
+      pickupPhoneRequired: 'رقم هاتف المرسل مطلوب',
+      invalidPickupPhone: 'رقم هاتف المرسل غير صالح',
       pickupLocationRequired: 'موقع الاستلام مطلوب',
       weightRequired: 'الوزن مطلوب',
-      invalidWeight: 'قيمة وزن غير صالحة',
+      invalidWeight: 'قيمة الوزن غير صالحة',
       priceRequired: 'السعر مطلوب',
-      invalidPrice: 'قيمة سعر غير صالحة',
-      invalidDate: 'تاريخ غير صالح - يجب أن يكون اليوم أو المستقبل',
+      invalidPrice: 'قيمة السعر غير صالحة',
+      invalidDate: 'تاريخ غير صالح - يجب أن يكون اليوم أو في المستقبل',
       receiverNameRequired: 'اسم المستلم مطلوب',
       receiverPhoneRequired: 'رقم هاتف المستلم مطلوب',
-      invalidReceiverPhone: 'رقم هاتف مستلم غير صالح',
-      receiverLocationRequired: 'موقع المستلم مطلوب',
-      fixErrors: 'يرجى إصلاح الأخطاء التالية'
+      invalidReceiverPhone: 'رقم هاتف المستلم غير صالح',
+      receiverLocationRequired: 'موقع التسليم مطلوب',
+      fixErrors: 'يرجى إصلاح الأخطاء التالية',
+      jobPostedSuccess: 'تم نشر الوظيفة بنجاح',
+      createPackageError: 'فشل في إنشاء الطرد. يرجى المحاولة مرة أخرى.'
     },
     updateSuccess: 'تم تحديث الطرد بنجاح',
     createSuccess: 'تم إنشاء الطرد بنجاح',
@@ -166,7 +168,8 @@ export default {
       completeDelivery: 'إكمال التسليم',
       cancelDelivery: 'إلغاء التسليم',
       editDelivery: 'تعديل التسليم',
-      leaveReview: 'ترك تقييم'
+      leaveReview: 'ترك تقييم',
+      sendMessage: 'إرسال رسالة'
     },
     deliveryCompleted: {
       title: 'اكتمل التسليم!',

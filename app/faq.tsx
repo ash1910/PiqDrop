@@ -222,7 +222,7 @@ export default function SafetyScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.push('/supportService')} 
+            onPress={() => router.replace('/(tabs)/message')} 
           >
             <HeadphonesRoundIcon size={20} color={COLORS.buttonText} />
             <Text style={styles.continueButtonText}>{t('faq.getSupport')}</Text>

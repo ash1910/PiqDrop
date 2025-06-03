@@ -110,20 +110,22 @@ export default {
     mapHint: 'स्थान चुनने के लिए मानचित्र पर टैप करें',
     dropoff: 'ड्रॉपऑफ',
     validation: {
-      pickupNameRequired: 'पिकअप नाम आवश्यक है',
-      pickupPhoneRequired: 'पिकअप फोन नंबर आवश्यक है',
-      invalidPickupPhone: 'अमान्य पिकअप फोन नंबर',
+      pickupNameRequired: 'भेजने वाले का नाम आवश्यक है',
+      pickupPhoneRequired: 'भेजने वाले का फोन नंबर आवश्यक है',
+      invalidPickupPhone: 'भेजने वाले का अमान्य फोन नंबर',
       pickupLocationRequired: 'पिकअप स्थान आवश्यक है',
       weightRequired: 'वजन आवश्यक है',
       invalidWeight: 'अमान्य वजन मान',
       priceRequired: 'मूल्य आवश्यक है',
       invalidPrice: 'अमान्य मूल्य मान',
-      invalidDate: 'अमान्य तिथि - आज या भविष्य की होनी चाहिए',
+      invalidDate: 'अमान्य तिथि - आज या भविष्य की तिथि होनी चाहिए',
       receiverNameRequired: 'प्राप्तकर्ता का नाम आवश्यक है',
       receiverPhoneRequired: 'प्राप्तकर्ता का फोन नंबर आवश्यक है',
-      invalidReceiverPhone: 'अमान्य प्राप्तकर्ता फोन नंबर',
-      receiverLocationRequired: 'प्राप्तकर्ता का स्थान आवश्यक है',
-      fixErrors: 'कृपया निम्नलिखित त्रुटियों को ठीक करें'
+      invalidReceiverPhone: 'प्राप्तकर्ता का अमान्य फोन नंबर',
+      receiverLocationRequired: 'डिलीवरी स्थान आवश्यक है',
+      fixErrors: 'कृपया निम्नलिखित त्रुटियों को ठीक करें',
+      jobPostedSuccess: 'नौकरी सफलतापूर्वक पोस्ट की गई',
+      createPackageError: 'पैकेज बनाने में विफल। कृपया पुनः प्रयास करें।'
     },
     updateSuccess: 'पैकेज सफलतापूर्वक अपडेट किया गया',
     createSuccess: 'पैकेज सफलतापूर्वक बनाया गया',
@@ -163,10 +165,11 @@ export default {
       canceled: 'रद्द'
     },
     actions: {
-      completeDelivery: 'डिलीवरी पूर्ण करें',
+      completeDelivery: 'डिलीवरी पूरी करें',
       cancelDelivery: 'डिलीवरी रद्द करें',
       editDelivery: 'डिलीवरी संपादित करें',
-      leaveReview: 'समीक्षा छोड़ें'
+      leaveReview: 'समीक्षा छोड़ें',
+      sendMessage: 'संदेश भेजें'
     },
     deliveryCompleted: {
       title: 'डिलीवरी पूर्ण!',
