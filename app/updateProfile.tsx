@@ -27,6 +27,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { authService } from '@/services/auth.service';
 import api from '@/services/api';
 import { parsePhoneNumber } from 'libphonenumber-js';
+import { uploadService } from '@/services/upload.service';
+import { useTranslation } from 'react-i18next';
 
 const HEADER_HEIGHT = 156;
 const { width, height } = Dimensions.get('window');
@@ -61,6 +63,7 @@ interface UpdateUserData {
 }
 
 export default function UpdateProfileScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -89,6 +92,7 @@ export default function UpdateProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState('map');
   const [isLoading, setIsLoading] = useState(false);
+  const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -165,8 +169,7 @@ export default function UpdateProfileScreen() {
           setDate(user.date_of_birth ? new Date(user.date_of_birth) : null);
 
           if (user.image) {
-            const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
-            setSenderProfileImage(user.image ? {uri: `${baseURLWithoutApi}/${user.image}`} : require('@/assets/img/profile-blank.png'));
+            setSenderProfileImage(user.image);
           }
           
           // Set phone and country code from mobile if available
@@ -330,10 +333,27 @@ export default function UpdateProfileScreen() {
       });
 
       if (!result.canceled) {
-        setProfileImage(result.assets[0].uri);
+        setIsLoading(true);
+        try {
+          // Compress image before upload
+          const compressedUri = await uploadService.compressImage(result.assets[0].uri);
+          const response = await authService.uploadImage(compressedUri, 'profile');
+          console.log(response);
+          if (response.data.image) {
+            setSenderProfileImage(response.data.image);
+            Alert.alert('Success', 'Profile image updated successfully');
+          } else {
+            Alert.alert('Error', 'Failed to update profile image');
+          }
+        } catch (error: any) {
+          Alert.alert('Error', error.message);
+        } finally {
+            setIsLoading(false);
+        }
       }
     } catch (error) {
       console.error('Error taking picture:', error);
+      Alert.alert('Error', 'Failed to take picture. Please try again.');
     }
   };
 
@@ -347,14 +367,14 @@ export default function UpdateProfileScreen() {
         try {
           const phoneNumber = parsePhoneNumber(mobile);
           if (!phoneNumber || !phoneNumber.isValid()) {
-            Alert.alert('Validation Error', 'Invalid phone number format');
+            Alert.alert(t('updateProfile.validationError'), t('updateProfile.invalidPhone'));
             setIsLoading(false);
             return;
           }
           console.log(phoneNumber);
           mobile = phoneNumber.number as string;
         } catch (error) {
-          Alert.alert('Validation Error', 'Invalid phone number');
+          Alert.alert(t('updateProfile.validationError'), t('updateProfile.invalidPhone'));
           setIsLoading(false);
           return;
         }
@@ -378,7 +398,7 @@ export default function UpdateProfileScreen() {
       const response = await authService.updateUserProfile(userData);
 
       if (response) {
-        Alert.alert('Success', 'Profile updated successfully');
+        Alert.alert(t('common.success'), t('updateProfile.success'));
         router.push('/(tabs)/account');
       }
     } catch (error: any) {
@@ -392,16 +412,16 @@ export default function UpdateProfileScreen() {
           .join('\n');
         
         Alert.alert(
-          'Validation Error',
+          t('updateProfile.validationError'),
           errorMessages,
-          [{ text: 'OK', style: 'default' }]
+          [{ text: t('common.ok'), style: 'default' }]
         );
       } else {
         // Handle other errors
         Alert.alert(
-          'Error',
-          'Failed to update profile. Please try again.',
-          [{ text: 'OK', style: 'default' }]
+          t('common.error'),
+          t('updateProfile.error'),
+          [{ text: t('common.ok'), style: 'default' }]
         );
       }
     } finally {
@@ -424,7 +444,7 @@ export default function UpdateProfileScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Update Informations</Text>
+          <Text style={styles.pageTitle}>{t('updateProfile.title')}</Text>
         </Animated.View>
 
         <View style={styles.form}>
@@ -432,25 +452,18 @@ export default function UpdateProfileScreen() {
             <TouchableOpacity style={styles.editProfile} onPress={() => takePicture()}>
               <EditIcon size={20} />
             </TouchableOpacity>
-            {profileImage && (
-              <TouchableOpacity style={styles.profileImage} onPress={() => takePicture()}>
-                <Image source={{ uri: profileImage }} style={styles.profileImage} />
-              </TouchableOpacity>
-            )}
-            {!profileImage && (
-              <TouchableOpacity style={styles.profileImage} onPress={() => takePicture()}>
-                <Image source={require('@/assets/images/profile_pic.jpg')} style={styles.profileImage} />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={styles.profileImage} onPress={() => takePicture()}>
+              <Image source={{ uri: senderProfileImage ? `${baseURLWithoutApi}/${senderProfileImage}` : require('@/assets/img/profile-blank.png') }} style={styles.profileImage} />
+            </TouchableOpacity>
             <Text style={styles.profileName}>{firstName} {lastName}</Text>
             <Text style={styles.profileUserName}>{email}</Text>
           </View>
 
-          <Text style={styles.label}>First Name</Text>
+          <Text style={styles.label}>{t('updateProfile.firstName')}</Text>
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
             <TextInput 
-              placeholder="First Name" 
+              placeholder={t('updateProfile.firstName')} 
               style={styles.input} 
               value={firstName} 
               onChangeText={setFirstName} 
@@ -463,11 +476,11 @@ export default function UpdateProfileScreen() {
             />
           </View>
 
-          <Text style={styles.label}>Last Name</Text>
+          <Text style={styles.label}>{t('updateProfile.lastName')}</Text>
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
             <TextInput 
-              placeholder="Last Name" 
+              placeholder={t('updateProfile.lastName')} 
               style={styles.input} 
               value={lastName} 
               onChangeText={setLastName} 
@@ -480,25 +493,7 @@ export default function UpdateProfileScreen() {
             />
           </View>
 
-          {/* <Text style={styles.label}>Email</Text>
-          <View style={styles.inputContainer}>
-            <LetterIcon size={20} color={COLORS.text} />
-            <TextInput 
-              placeholder="Email" 
-              style={styles.input} 
-              value={email} 
-              onChangeText={setEmail} 
-              returnKeyType="done" 
-              onSubmitEditing={handleReturnKey}
-              textContentType="emailAddress"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              selectionColor={COLORS.primary}
-              clearButtonMode="always"
-            />
-          </View> */}
-
-          <Text style={styles.label}>Mobile Number</Text>
+          <Text style={styles.label}>{t('updateProfile.mobile')}</Text>
           <View style={styles.inputContainer}>
             <CountryPicker
               countryCode={countryCode as Country["cca2"]}
@@ -513,7 +508,7 @@ export default function UpdateProfileScreen() {
             <SelectDownArrowIcon size={16} color={COLORS.text} /> 
             <TextInput
               style={styles.input}
-              placeholder="Phone number"
+              placeholder={t('updateProfile.mobile')}
               keyboardType="phone-pad"
               value={phone}
               onChangeText={setPhone}
@@ -525,13 +520,13 @@ export default function UpdateProfileScreen() {
             />
           </View>
 
-          <Text style={styles.label}>Address</Text>
+          <Text style={styles.label}>{t('updateProfile.address')}</Text>
           <View style={styles.inputContainer}>
             <TouchableOpacity onPress={() => setModalVisible(true)}>
               <LocationIcon size={20} color={COLORS.text} /> 
             </TouchableOpacity>
             <TextInput 
-              placeholder="Location" 
+              placeholder={t('updateProfile.address')} 
               value={location} 
               onChangeText={setLocation} 
               style={styles.input} 
@@ -544,7 +539,6 @@ export default function UpdateProfileScreen() {
 
             <Modal visible={modalVisible} animationType="slide">
               <View style={{ flex: 1 }}>
-                {/* Map View */}
                 {mode === 'map' && (
                   <>
                     {region && (
@@ -559,17 +553,16 @@ export default function UpdateProfileScreen() {
                       >
                         {marker && <Marker coordinate={marker} />}
                       </MapView>
-                      <Text style={styles.mapHint}>Tap on the map to select location</Text>
+                      <Text style={styles.mapHint}>{t('updateProfile.mapHint')}</Text>
                       </>
                     )}
                   </>
                 )}
 
-                {/* Manual Entry */}
                 {mode === 'manual' && (
                   <View style={styles.manualContainer}>
                     <TextInput
-                      placeholder="Type address here"
+                      placeholder={t('updateProfile.typeAddress')}
                       value={location}
                       onChangeText={setLocation}
                       style={styles.manualInput}
@@ -583,13 +576,12 @@ export default function UpdateProfileScreen() {
                     />
                   </View>
                 )}
-                {/* Mode switch buttons */}
                 <View style={styles.toggleContainer}>
                   <TouchableOpacity
                     style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
                     onPress={() => setModalVisible(false)}
                   >
-                    <Text style={styles.toggleText}>Close</Text>
+                    <Text style={styles.toggleText}>{t('updateProfile.close')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
@@ -600,24 +592,22 @@ export default function UpdateProfileScreen() {
                       setModalVisible(false);
                     }}
                   >
-                    <Text style={styles.toggleText}>Done</Text>
+                    <Text style={styles.toggleText}>{t('updateProfile.done')}</Text>
                   </TouchableOpacity>
-                  
                 </View>
               </View>
             </Modal>
           </View>
 
-          <Text style={styles.label}>Date of birth</Text>
+          <Text style={styles.label}>{t('updateProfile.dateOfBirth')}</Text>
           <View style={styles.rowContainer}>
             <View style={styles.rowItem}>
               <TouchableOpacity onPress={() => setShowDateModal(true)} style={styles.inputContainer}>
                 <CalendarIcon size={20} color={COLORS.text} /> 
-                <Text style={styles.input}>{formatDate(date) || 'Date of birthday'}</Text>
+                <Text style={styles.input}>{formatDate(date) || t('updateProfile.dateOfBirth')}</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Date Modal */}
             <Modal visible={showDateModal} transparent animationType="slide">
               <View style={styles.modalBackground}>
                 <View style={styles.modalContainer}>
@@ -629,31 +619,31 @@ export default function UpdateProfileScreen() {
                     style={styles.picker}
                   />
                   <TouchableOpacity onPress={() => setShowDateModal(false)} style={styles.modalButton}>
-                    <Text style={styles.modalButtonText}>Done</Text>
+                    <Text style={styles.modalButtonText}>{t('updateProfile.done')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </Modal>
           </View>
 
-          <Text style={styles.label}>Nationality</Text>
+          <Text style={styles.label}>{t('updateProfile.nationality')}</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
             onPress={() => openPicker('nationality')}
           >
             <Text style={[styles.input, !nationality && { color: '#999' }]}>
-              {nationality || 'Nationality'}
+              {nationality || t('updateProfile.nationality')}
             </Text>
             <SelectArrowIcon size={20} color={COLORS.text} />
           </TouchableOpacity>
 
-          <Text style={styles.label}>Gender</Text>
+          <Text style={styles.label}>{t('updateProfile.gender')}</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
             onPress={() => openPicker('gender')}
           >
             <Text style={[styles.input, !gender && { color: '#999' }]}>
-              {gender || 'Gender'}
+              {gender || t('updateProfile.gender')}
             </Text>
             <SelectArrowIcon size={20} color={COLORS.text} />
           </TouchableOpacity>
@@ -667,11 +657,11 @@ export default function UpdateProfileScreen() {
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
                   <TouchableOpacity onPress={() => setShowPicker(false)}>
-                    <Text style={styles.cancelButton}>Cancel</Text>
+                    <Text style={styles.cancelButton}>{t('updateProfile.cancel')}</Text>
                   </TouchableOpacity>
                   <Text style={styles.modalTitle}>{getPickerTitle()}</Text>
                   <TouchableOpacity onPress={() => setShowPicker(false)}>
-                    <Text style={styles.doneButton}>Done</Text>
+                    <Text style={styles.doneButton}>{t('updateProfile.done')}</Text>
                   </TouchableOpacity>
                 </View>
                 <Picker
@@ -696,7 +686,7 @@ export default function UpdateProfileScreen() {
           disabled={isLoading}
         >
           <Text style={styles.continueButtonText}>
-            {isLoading ? 'Updating...' : 'Update'}
+            {isLoading ? t('updateProfile.updating') : t('updateProfile.update')}
           </Text>
         </TouchableOpacity>
       </View>

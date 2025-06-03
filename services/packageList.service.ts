@@ -3,7 +3,7 @@ import api from './api';
 export interface Package {
   id: number;
   info: string;
-  weight: number;
+  weight: string | number;
   price: string;
   status: string;
   sender: {

@@ -16,6 +16,7 @@ import * as Location from 'expo-location';
 import mapStyle from '@/components/mapStyle.json';
 import api from '@/services/api';
 import { Package } from '@/services/packageList.service';
+import { useTranslation } from 'react-i18next';
 
 const HEADER_HEIGHT = 120;
 
@@ -78,6 +79,7 @@ export default function OrderDetailScreen() {
   const [showMarkerInfo, setShowMarkerInfo] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
   const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
+  const { t } = useTranslation();
   
   const pickupMarkerRef = useRef<MapMarker>(null);
   const dropoffMarkerRef = useRef<MapMarker>(null);
@@ -331,7 +333,7 @@ export default function OrderDetailScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.replace('/(tabs)/manage')}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Order Detail</Text>
+          <Text style={styles.pageTitle}>{t('orderDetail.title')}</Text>
         </Animated.View>
 
         <View style={styles.mapContainer}>
@@ -360,7 +362,7 @@ export default function OrderDetailScreen() {
               <Marker
                 ref={pickupMarkerRef}
                 coordinate={pickupCoords}
-                title="Pick-up"
+                title={t('packageForm.pickupDetails')}
                 description={orderData?.pickup.address || 'N/A'}
               >
                 <Image source={require('@/assets/icons/pickup-marker.png')} style={{ width: 36, height: 36 }} />
@@ -370,7 +372,7 @@ export default function OrderDetailScreen() {
               <Marker
                 ref={dropoffMarkerRef}
                 coordinate={dropoffCoords}
-                title="Drop-off"
+                title={t('packageForm.dropoffDetails')}
                 description={orderData?.drop.address || 'N/A'}
               >
                 <Image source={require('@/assets/icons/dropoff-marker.png')} style={{ width: 36, height: 36 }} />
@@ -389,8 +391,25 @@ export default function OrderDetailScreen() {
                 ) : ( 
                   <View style={styles.userAvatar} />
                 )}
-                <Text style={styles.orderSummaryUserName}>{orderData?.pickup.name || 'N/A'}</Text>
+                <View style={styles.orderSummaryUserText}> 
+                  <Text style={styles.orderSummaryUserName}>{orderData?.pickup.name || 'N/A'}</Text>
+                  <Text style={styles.orderSummaryUserRole}>{t('packageForm.sender')}</Text>
+                </View>
               </View>
+              {orderData?.order?.dropper && (
+              <View style={styles.orderSummaryUserRow}>
+                {orderData?.order?.dropper?.image ? ( 
+                  <Image source={{ uri: `${baseURLWithoutApi}/${orderData.order.dropper.image}` }} style={styles.userAvatar} />
+                ) : ( 
+                  <View style={styles.userAvatar} />
+                )}
+                <View style={styles.orderSummaryUserText}> 
+                  <Text style={styles.orderSummaryUserName}>{orderData?.order?.dropper?.name || 'N/A'}</Text>
+                  <Text style={styles.orderSummaryUserRole}>{t('packageForm.receiver')}</Text>
+                </View>
+              </View>
+              )}
+
               <View style={styles.orderSummaryPriceBox}>
                 <Text style={styles.orderSummaryPrice}>${parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
               </View>
@@ -399,43 +418,39 @@ export default function OrderDetailScreen() {
 
           {/* Pick-up Details Card */}
           <View style={styles.pickupDetailsCard}>
-            <Text style={styles.pickupDetailsTitle}>Pick-up details</Text>
+            <Text style={styles.pickupDetailsTitle}>{t('orderDetail.pickupDetails.title')}</Text>
             <View style={styles.pickupDetailsDivider} />
             <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>Name:</Text>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.name')}</Text>
               <Text style={styles.pickupDetailsValue}>{orderData?.pickup.name || 'N/A'}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>Number:</Text>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.number')}</Text>
               <Text style={styles.pickupDetailsValue}>{orderData?.pickup.mobile || 'N/A'}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>Weight:</Text>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.weight')}</Text>
               <Text style={styles.pickupDetailsValue}>
                 {orderData?.weight 
-                  ? (typeof orderData.weight === 'string' && orderData.weight.toLowerCase().includes('kg')
-                    ? orderData.weight 
+                  ? (typeof orderData.weight === 'string' 
+                    ? ((orderData.weight as string).toLowerCase().includes('kg') ? orderData.weight : `${orderData.weight}Kg`)
                     : `${orderData.weight}Kg`)
                   : 'N/A'}
               </Text>
             </View>
             <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>Price:</Text>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.price')}</Text>
               <Text style={styles.pickupDetailsValue}>${parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>Date:</Text>
-              <Text style={styles.pickupDetailsValue}>{orderData?.pickup.date ? `${orderData.pickup.date}` : ''} {orderData?.pickup.time ? `${orderData.pickup.time}` : 'N/A'}</Text>
-            </View>
-            <View style={[styles.pickupDetailsRow, { alignItems: 'flex-start' }]}> 
-              <Text style={styles.pickupDetailsLabel}>Location:</Text>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.location')}</Text>
               <Text style={styles.pickupDetailsValue}>
                 {orderData?.pickup.address || 'N/A'}
               </Text>
             </View>
             {/* Note Section */}
             <View style={styles.noteBox}>
-              <Text style={styles.noteLabel}>Note</Text>
+              <Text style={styles.noteLabel}>{t('orderDetail.pickupDetails.note')}</Text>
               <Text style={styles.noteText}>
                 {orderData?.pickup.details || 'No details provided'}
               </Text>
@@ -444,25 +459,25 @@ export default function OrderDetailScreen() {
 
           {/* Drop-off Details Card */}
           <View style={styles.pickupDetailsCard}>
-            <Text style={styles.pickupDetailsTitle}>Drop-off details</Text>
+            <Text style={styles.pickupDetailsTitle}>{t('orderDetail.dropoffDetails.title')}</Text>
             <View style={styles.pickupDetailsDivider} />
             <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>Name:</Text>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.dropoffDetails.name')}</Text>
               <Text style={styles.pickupDetailsValue}>{orderData?.drop.name || 'N/A'}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>Number:</Text>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.dropoffDetails.number')}</Text>
               <Text style={styles.pickupDetailsValue}>{orderData?.drop.mobile || 'N/A'}</Text>
             </View>
-            <View style={[styles.pickupDetailsRow, { alignItems: 'flex-start' }]}> 
-              <Text style={styles.pickupDetailsLabel}>Location:</Text>
+            <View style={styles.pickupDetailsRow}>
+              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.dropoffDetails.location')}</Text>
               <Text style={styles.pickupDetailsValue}>
                 {orderData?.drop.address || 'N/A'}
               </Text>
             </View>
             {/* Note Section */}
             <View style={styles.noteBox}>
-              <Text style={styles.noteLabel}>Note</Text>
+              <Text style={styles.noteLabel}>{t('orderDetail.dropoffDetails.note')}</Text>
               <Text style={styles.noteText}>
                 {orderData?.drop.details || 'No details provided'}
               </Text>
@@ -548,6 +563,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  orderSummaryUserText: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
   userAvatar: {
     width: 38,
     height: 38,
@@ -558,6 +578,12 @@ const styles = StyleSheet.create({
   orderSummaryUserName: {
     fontFamily: 'nunito-bold',
     fontSize: 16,
+    letterSpacing: 0.2,
+    color: COLORS.text,
+  },
+  orderSummaryUserRole: {
+    fontFamily: 'nunito-regular',
+    fontSize: 12,
     letterSpacing: 0.2,
     color: COLORS.text,
   },

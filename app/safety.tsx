@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
@@ -12,6 +12,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { authService } from '@/services/auth.service';
 import api from '@/services/api';
+import { useTranslation } from 'react-i18next';
 
 const HEADER_HEIGHT = 120;
 
@@ -24,12 +25,10 @@ const COLORS = {
   buttonText: '#FFFFFF',
   subtitle: '#616161',
 };
-
-const TABS = ['Guide', 'Tools'];
-const screenWidth = Dimensions.get('window').width;
-const TAB_WIDTH = (screenWidth - 32 - 8) / TABS.length;
+let tabWidth = 0;
 
 export default function SafetyScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -38,13 +37,18 @@ export default function SafetyScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const translateX = useSharedValue(0);
 
+  const TABS = [t('safety.tabs.guide'), t('safety.tabs.tools')];
+  const screenWidth = Dimensions.get('window').width;
+  tabWidth = useMemo(() => (screenWidth - 32 - 8) / TABS.length, [screenWidth, TABS.length]);
+
   const handlePress = (index: number) => {
     setActiveTab(index);
-    translateX.value = withTiming(index * TAB_WIDTH, { duration: 200 });
+    translateX.value = withTiming(index * tabWidth, { duration: 200 });
   };
 
   const animatedTabStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
+    width: tabWidth,
   }));
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
@@ -110,11 +114,10 @@ export default function SafetyScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Safety Center</Text>
+          <Text style={styles.pageTitle}>{t('safety.title')}</Text>
         </Animated.View>
 
         <View style={styles.form}>
-
           <View style={styles.senderProfileContainer}> 
             <View style={styles.senderProfileImageContainer}>
               {user?.image ? (
@@ -124,10 +127,10 @@ export default function SafetyScreen() {
               )}
             </View>
             <View style={styles.senderProfileTextContainer}> 
-              <Text style={styles.title}>Hi {user?.first_name} {user?.last_name}</Text>
+              <Text style={styles.title}>{t('safety.greeting')} {user?.first_name} {user?.last_name}</Text>
             </View>
           </View>
-          <Text style={styles.subtitle}>Here's what you need to know about safety</Text>
+          <Text style={styles.subtitle}>{t('safety.subtitle')}</Text>
 
           <View style={styles.tabContainer}>
             {/* Tab Bar */}
@@ -158,8 +161,8 @@ export default function SafetyScreen() {
                   <View style={styles.successContainer}> 
                     <Image source={require('@/assets/icons/check_id.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Check ID</Text>
-                      <Text style={styles.successDescription}>Check the ID card or passport of the dropper before giving them your items, make sure it matches with the profile on the platform.</Text>
+                      <Text style={styles.successText}>{t('safety.guide.checkId.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.guide.checkId.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -167,8 +170,8 @@ export default function SafetyScreen() {
                   <View style={styles.successContainer}> 
                     <Image source={require('@/assets/icons/carefull.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Careful</Text>
-                      <Text style={styles.successDescription}>Take a selfie with your dropper if possible. it's easier to identify your dropper if anything should happen, however, don't post the picture or use it for any other purpose without the permission of the dropper, After your items have been dropped you are obligated to delete the photo, failure to do so might have consequences.</Text>
+                      <Text style={styles.successText}>{t('safety.guide.careful.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.guide.careful.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -176,8 +179,8 @@ export default function SafetyScreen() {
                   <View style={styles.successContainer}> 
                     <Image source={require('@/assets/icons/scammers.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Scammers</Text>
-                      <Text style={styles.successDescription}>scammers are upping their game, we will never call you out of the blue to ask for you card PIN, bank details, full password, account secure access code the ccv (3 digits) on the back of your card, account (Micr) number and personal information. Be vigilant!</Text>
+                      <Text style={styles.successText}>{t('safety.guide.scammers.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.guide.scammers.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -185,8 +188,8 @@ export default function SafetyScreen() {
                   <View style={styles.successContainer}> 
                     <Image source={require('@/assets/icons/payment.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Payment</Text>
-                      <Text style={styles.successDescription}>Never pay offline or move money to another account. Our payment system is built to protect our users. </Text>
+                      <Text style={styles.successText}>{t('safety.guide.payment.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.guide.payment.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -201,8 +204,8 @@ export default function SafetyScreen() {
                       style={styles.successImage} 
                     />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Emergency Contacts</Text>
-                      <Text style={styles.successDescription}>Save these emergency numbers: Local Police (911), PiqDrop Support (1-800-PIQDROP), and your local emergency services.</Text>
+                      <Text style={styles.successText}>{t('safety.tools.emergencyContacts.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.tools.emergencyContacts.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -213,8 +216,8 @@ export default function SafetyScreen() {
                       style={styles.successImage} 
                     />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Location Sharing</Text>
-                      <Text style={styles.successDescription}>Share your live location with trusted contacts during drops. Enable location sharing in your device settings for added safety.</Text>
+                      <Text style={styles.successText}>{t('safety.tools.locationSharing.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.tools.locationSharing.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -225,8 +228,8 @@ export default function SafetyScreen() {
                       style={styles.successImage} 
                     />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Verification Checklist</Text>
-                      <Text style={styles.successDescription}>Use our verification checklist before each drop: ID verification, profile match, payment confirmation, and drop location safety check.</Text>
+                      <Text style={styles.successText}>{t('safety.tools.verificationChecklist.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.tools.verificationChecklist.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -237,8 +240,8 @@ export default function SafetyScreen() {
                       style={styles.successImage} 
                     />
                     <View style={styles.successTextContainer}>
-                      <Text style={styles.successText}>Report Issues</Text>
-                      <Text style={styles.successDescription}>Report any safety concerns or suspicious activity immediately through the app. Our safety team is available 24/7 to assist you.</Text>
+                      <Text style={styles.successText}>{t('safety.tools.reportIssues.title')}</Text>
+                      <Text style={styles.successDescription}>{t('safety.tools.reportIssues.description')}</Text>
                     </View>
                   </View>
                 </View>
@@ -246,7 +249,6 @@ export default function SafetyScreen() {
               )}
             </View>
           </View>
-
         </View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -379,7 +381,7 @@ const styles = StyleSheet.create({
   animatedIndicator: {
     position: 'absolute',
     height: '100%',
-    width: TAB_WIDTH,
+    width: tabWidth,
     backgroundColor: COLORS.primary,
     borderRadius: 14,
     zIndex: 0,

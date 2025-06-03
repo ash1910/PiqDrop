@@ -10,6 +10,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { SuccessIcon } from '@/components/icons/SuccessIcon';
 import { DotIcon } from '@/components/icons/DotIcon';
+import { useTranslation } from 'react-i18next';
 
 const HEADER_HEIGHT = 120;
 
@@ -24,6 +25,7 @@ const COLORS = {
 };
 
 export default function NotificationScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -84,7 +86,7 @@ export default function NotificationScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Notification</Text>
+          <Text style={styles.pageTitle}>{t('notification.title')}</Text>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <Image source={require('@/assets/icons/settings-icon.png')} style={{width: 44, height: 44}} />
           </TouchableOpacity>
@@ -96,31 +98,31 @@ export default function NotificationScreen() {
             <View style={styles.successContainer}> 
               <SuccessIcon size={40} />
               <View style={styles.successTextContainer}>
-                <Text style={styles.successText}>System Updates</Text>
+                <Text style={styles.successText}>{t('notification.newFeature.title')}</Text>
                 <View style={styles.dateContainer}>
-                  <Text style={styles.dateText}>Today</Text>
+                  <Text style={styles.dateText}>{t('notification.today')}</Text>
                   <DotIcon size={3} />
                   <Text style={styles.dateText}>09:24 AM</Text>
                 </View>
               </View>
-              <Text style={styles.newText}>New</Text>
+              <Text style={styles.newText}>{t('notification.new')}</Text>
             </View>
-            <Text style={styles.successDescription}>This update includes performance improvements, bug fixes, and new features to enhance your experience.</Text>
+            <Text style={styles.successDescription}>{t('notification.newFeature.description')}</Text>
           </View>
 
           <View style={styles.notificationContainer}>
             <View style={styles.successContainer}> 
               <SuccessIcon size={40} />
               <View style={styles.successTextContainer}>
-                <Text style={styles.successText}>System Updates</Text>
+                <Text style={styles.successText}>{t('notification.maintenance.title')}</Text>
                 <View style={styles.dateContainer}>
-                  <Text style={styles.dateText}>Today</Text>
+                  <Text style={styles.dateText}>{t('notification.yesterday')}</Text>
                   <DotIcon size={3} />
-                  <Text style={styles.dateText}>09:24 AM</Text>
+                  <Text style={styles.dateText}>02:15 PM</Text>
                 </View>
               </View>
             </View>
-            <Text style={styles.successDescription}>This update includes performance improvements, bug fixes, and new features to enhance your experience.</Text>
+            <Text style={styles.successDescription}>{t('notification.maintenance.description')}</Text>
           </View>
 
         </View>

@@ -11,6 +11,7 @@ import { parsePhoneNumber } from 'libphonenumber-js';
 import api from '@/services/api';
 import { packageService } from '@/services/package.service';
 import { Package } from '@/services/packageList.service';
+import { useTranslation } from 'react-i18next';
 
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -59,6 +60,7 @@ interface RouteParams {
 }
 
 export default function PackageEditScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -175,10 +177,10 @@ export default function PackageEditScreen() {
   useEffect(() => {
     if (error) {
       Alert.alert(
-        'Validation Error',
+        t('common.error'),
         error,
         [
-          { text: 'OK', onPress: () => setError(null) }
+          { text: t('common.ok'), onPress: () => setError(null) }
         ],
         { cancelable: false }
       );
@@ -293,14 +295,6 @@ export default function PackageEditScreen() {
   const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     setMarker(coords);
-    
-    const newRegion: Region = {
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
-    setRegion(newRegion);
 
     try {
       const geocode = await Location.reverseGeocodeAsync(coords);
@@ -329,14 +323,6 @@ export default function PackageEditScreen() {
   const handleMapPressDropOff = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     setMarkerDropOff(coords);
-    
-    const newRegion: Region = {
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
-    setRegionDropOff(newRegion);
 
     try {
       const geocode = await Location.reverseGeocodeAsync(coords);
@@ -393,43 +379,43 @@ export default function PackageEditScreen() {
       const validationErrors = [];
 
       if (!name.trim()) {
-        validationErrors.push('Pickup name is required');
+        validationErrors.push(t('packageForm.validation.pickupNameRequired'));
       }
 
       // Validate pickup phone number
       var pickup_mobile = `+${callingCode}${phone.trim()}`;
       if (!phone.trim()) {
-        validationErrors.push('Pickup mobile number is required');
+        validationErrors.push(t('packageForm.validation.pickupPhoneRequired'));
       } else {
         try {
           const pickupPhoneNumber = parsePhoneNumber(pickup_mobile);
           if (!pickupPhoneNumber || !pickupPhoneNumber.isValid()) {
-            validationErrors.push('Invalid pickup phone number format');
+            validationErrors.push(t('packageForm.validation.invalidPickupPhone'));
           }
           else{
             pickup_mobile = pickupPhoneNumber.number;
           }
         } catch (error) {
-          validationErrors.push('Invalid pickup phone number');
+          validationErrors.push(t('packageForm.validation.invalidPickupPhone'));
         }
       }
 
       if (!location.trim()) {
-        validationErrors.push('Pickup location is required');
+        validationErrors.push(t('packageForm.validation.pickupLocationRequired'));
       }
 
       if (!weight){
-        validationErrors.push('Weight is required');
+        validationErrors.push(t('packageForm.validation.weightRequired'));
       }
       else if (isNaN(parseFloat(weight)) || parseFloat(weight) < 0.01) {
-        validationErrors.push('Weight must be a number');
+        validationErrors.push(t('packageForm.validation.invalidWeight'));
       }
 
       if (!price){
-        validationErrors.push('Price is required');
+        validationErrors.push(t('packageForm.validation.priceRequired'));
       }
       else if (isNaN(parseFloat(price)) || parseFloat(price) < 0.01) {
-        validationErrors.push('Price must be a number');
+        validationErrors.push(t('packageForm.validation.invalidPrice'));
       }
 
       // Validate pickup date is today or future
@@ -438,38 +424,38 @@ export default function PackageEditScreen() {
       const pickupDate = new Date(date);
       pickupDate.setHours(0, 0, 0, 0);
       if (pickupDate < today) {
-        validationErrors.push('Pickup date must be today or a future date');
+        validationErrors.push(t('packageForm.validation.invalidDate'));
       }
 
       if (!nameDropOff.trim()) {
-        validationErrors.push('Receiver name is required');
+        validationErrors.push(t('packageForm.validation.receiverNameRequired'));
       }
 
       // Validate drop-off phone number
       var dropOff_mobile = `+${callingCodeDropOff}${phoneDropOff.trim()}`;
       if (!phoneDropOff.trim()) {
-        validationErrors.push('Receiver mobile number is required');
+        validationErrors.push(t('packageForm.validation.receiverPhoneRequired'));
       } else {
         try {
           const dropOffPhoneNumber = parsePhoneNumber(dropOff_mobile);
           if (!dropOffPhoneNumber || !dropOffPhoneNumber.isValid()) {
-            validationErrors.push('Invalid receiver phone number format');
+            validationErrors.push(t('packageForm.validation.invalidReceiverPhone'));
           }
           else{
             dropOff_mobile = dropOffPhoneNumber.number;
           }
         } catch (error) {
-          validationErrors.push('Invalid receiver phone number');
+          validationErrors.push(t('packageForm.validation.invalidReceiverPhone'));
         }
       }
 
       if (!locationDropOff.trim()) {
-        validationErrors.push('Receiver location is required');
+        validationErrors.push(t('packageForm.validation.receiverLocationRequired'));
       }
 
       // If there are validation errors, show them all
       if (validationErrors.length > 0) {
-        setError('Please fix the following errors:\n\n• ' + validationErrors.join('\n• '));
+        setError(t('packageForm.validation.fixErrors') + '\n\n• ' + validationErrors.join('\n• '));
         return;
       }
 
@@ -504,10 +490,10 @@ export default function PackageEditScreen() {
       if (params.packageData) {
         const existingPackage = JSON.parse(params.packageData as string);
         response = await packageService.updatePackage(existingPackage.id, packageData);
-        Alert.alert('Success', 'Package updated successfully');
+        Alert.alert(t('common.success'), t('packageForm.updateSuccess'));
       } else {
         response = await packageService.createPackage(packageData);
-        Alert.alert('Success', 'Package created successfully');
+        Alert.alert(t('common.success'), t('packageForm.createSuccess'));
       }
 
       router.push({
@@ -516,7 +502,7 @@ export default function PackageEditScreen() {
       });
 
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to save package. Please try again.');
+      setError(err.response?.data?.message || err.message || t('packageForm.saveFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -536,7 +522,7 @@ export default function PackageEditScreen() {
       {isSubmitting ? (
         <ActivityIndicator color={COLORS.buttonText} />
       ) : (
-        <Text style={styles.loginText}>Update Job</Text>
+        <Text style={styles.loginText}>{t('packageForm.updateJob')}</Text>
       )}
     </TouchableOpacity>
   );
@@ -561,7 +547,7 @@ export default function PackageEditScreen() {
             >
               <SquareArrowUpIcon size={20} color={COLORS.background} />
               <Text style={styles.tabText}>
-                Pick-up details
+                {t('packageForm.pickupDetails')}
               </Text>
             </TouchableOpacity>
 
@@ -571,7 +557,7 @@ export default function PackageEditScreen() {
             >
               <SquareArrowDownIcon size={20} color={COLORS.background} />
               <Text style={styles.tabText}>
-                Drop-off details
+                {t('packageForm.dropoffDetails')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -588,16 +574,16 @@ export default function PackageEditScreen() {
                     <Image source={senderProfileImage} style={styles.senderProfileImage} />
                   </View>
                   <View style={styles.senderProfileTextContainer}> 
-                    <Text style={styles.title}>{name || 'Sender Name'}</Text>
-                    <Text style={styles.subtitle}>Sender</Text>
+                    <Text style={styles.title}>{name || t('packageForm.sender')}</Text>
+                    <Text style={styles.subtitle}>{t('packageForm.sender')}</Text>
                   </View>
                 </View>
                 
-                <Text style={styles.label}>Name</Text>
+                <Text style={styles.label}>{t('packageForm.name')}</Text>
                 <View style={styles.inputContainer}>
                   <UserRoundedIcon size={20} color={COLORS.text} />
                   <TextInput 
-                    placeholder="Name" 
+                    placeholder={t('packageForm.name')} 
                     value={name}  
                     onChangeText={setName} 
                     style={styles.input} 
@@ -610,7 +596,7 @@ export default function PackageEditScreen() {
                     />
                 </View>
 
-                <Text style={styles.label}>Number</Text>
+                <Text style={styles.label}>{t('packageForm.number')}</Text>
                 <View style={styles.inputContainer}>
                   <CountryPicker
                     countryCode={countryCode as Country["cca2"]}
@@ -625,7 +611,7 @@ export default function PackageEditScreen() {
                   <SelectDownArrowIcon size={16} color={COLORS.text} /> 
                   <TextInput
                     style={styles.input}
-                    placeholder="Phone number"
+                    placeholder={t('packageForm.number')}
                     keyboardType="phone-pad"
                     value={phone}
                     onChangeText={setPhone}
@@ -639,11 +625,11 @@ export default function PackageEditScreen() {
               
                 <View style={styles.rowContainer}>
                   <View style={styles.rowItem}>
-                    <Text style={styles.label}>Weight</Text>
+                    <Text style={styles.label}>{t('packageForm.weight')}</Text>
                     <View style={styles.inputContainer}>
                       <WeightIcon size={20} color={COLORS.text} /> 
                       <TextInput 
-                        placeholder="Weight" 
+                        placeholder={t('packageForm.weight')} 
                         value={weight} 
                         onChangeText={setWeight} 
                         style={styles.input} 
@@ -653,11 +639,11 @@ export default function PackageEditScreen() {
                     </View>
                   </View>
                   <View style={styles.rowItem}>
-                    <Text style={styles.label}>Price</Text>
+                    <Text style={styles.label}>{t('packageForm.price')}</Text>
                     <View style={styles.inputContainer}>
                       <MoneyIcon size={20} color={COLORS.text} />
                       <TextInput 
-                        placeholder="Price" 
+                        placeholder={t('packageForm.price')} 
                         value={price} 
                         onChangeText={setPrice} 
                         style={styles.input} 
@@ -668,13 +654,13 @@ export default function PackageEditScreen() {
                   </View>
                 </View>
 
-                <Text style={styles.label}>Location</Text>
+                <Text style={styles.label}>{t('packageForm.location')}</Text>
                 <View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => setModalVisible(true)}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder="Location" 
+                    placeholder={t('packageForm.location')} 
                     value={location} 
                     onChangeText={setLocation} 
                     style={styles.input} 
@@ -714,7 +700,7 @@ export default function PackageEditScreen() {
                               />
                             )}
                           </MapView>
-                          <Text style={styles.mapHint}>Tap on the map to select location</Text>
+                          <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
                         </>
                       )}
 
@@ -722,7 +708,7 @@ export default function PackageEditScreen() {
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
                           <TextInput
-                            placeholder="Type address here"
+                            placeholder={t('packageForm.location')}
                             value={location}
                             onChangeText={setLocation}
                             style={styles.manualInput}
@@ -744,30 +730,30 @@ export default function PackageEditScreen() {
                           style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
                           onPress={() => setMode('map')}
                         >
-                          <Text style={styles.toggleText}>Pick from Map</Text>
+                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
                           onPress={() => setMode('manual')}
                         >
-                          <Text style={styles.toggleText}>Enter Manually</Text>
+                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
                       </View>
                       <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 160, alignSelf: 'center'}]} 
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 220, alignSelf: 'center'}]} 
                           onPress={() => setModalVisible(false)}
                         >
-                          <Text style={styles.toggleText}>Use This Address</Text>
+                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                   </Modal>
                 </View>
 
-                <Text style={styles.label}>More details</Text>
+                <Text style={styles.label}>{t('packageForm.moreDetails')}</Text>
                 <View style={styles.inputContainer}>
                   <TextInput 
-                    placeholder="Write here..." 
+                    placeholder={t('packageForm.moreDetails')} 
                     value={details} 
                     onChangeText={setDetails} 
                     style={styles.input} 
@@ -778,7 +764,7 @@ export default function PackageEditScreen() {
                   />
                 </View>
 
-                <Text style={styles.label}>Pickup date and location</Text>
+                <Text style={styles.label}>{t('packageForm.pickupDateAndTime')}</Text>
                 <View style={styles.rowContainer}>
                   <View style={styles.rowItem}>
                     <Pressable onPress={() => setShowDateModal(true)} style={styles.inputContainer}>
@@ -795,7 +781,7 @@ export default function PackageEditScreen() {
                 </View>
                 <View style={styles.infoContainer}>
                   <InfoCircleIcon size={14} color={COLORS.text} />
-                  <Text style={styles.infoText}>Time zone is based on pickup location</Text>
+                  <Text style={styles.infoText}>{t('packageForm.timeZoneInfo')}</Text>
                 </View>
 
                 {/* Date Modal */}
@@ -844,17 +830,17 @@ export default function PackageEditScreen() {
                     <Image source={require('@/assets/img/profile-blank.png')} style={styles.senderProfileImage} />
                   </View>
                   <View style={styles.senderProfileTextContainer}> 
-                    <Text style={styles.title}>{nameDropOff || 'Receiver Name'}</Text>
-                    <Text style={styles.subtitle}>Receiver</Text>
+                    <Text style={styles.title}>{nameDropOff || t('packageForm.receiver')}</Text>
+                    <Text style={styles.subtitle}>{t('packageForm.receiver')}</Text>
                   </View>
-                  <Text style={styles.dropOffText}>Drop off</Text>
+                  <Text style={styles.dropOffText}>{t('packageForm.dropoff')}</Text>
                 </View>
 
-                <Text style={styles.label}>Name</Text>
+                <Text style={styles.label}>{t('packageForm.name')}</Text>
                 <View style={styles.inputContainer}>
                   <UserRoundedIcon size={20} color={COLORS.text} />
                   <TextInput 
-                    placeholder="Name" 
+                    placeholder={t('packageForm.name')} 
                     value={nameDropOff} 
                     onChangeText={setNameDropOff} 
                     style={styles.input} 
@@ -867,7 +853,7 @@ export default function PackageEditScreen() {
                     />
                 </View>
 
-                <Text style={styles.label}>Number</Text>
+                <Text style={styles.label}>{t('packageForm.number')}</Text>
                 <View style={styles.inputContainer}>
                   <CountryPicker
                     countryCode={countryCodeDropOff as Country["cca2"]}
@@ -882,7 +868,7 @@ export default function PackageEditScreen() {
                   <SelectDownArrowIcon size={16} color={COLORS.text} /> 
                   <TextInput
                     style={styles.input}
-                    placeholder="Phone number"
+                    placeholder={t('packageForm.number')}
                     keyboardType="phone-pad"
                     value={phoneDropOff}
                     onChangeText={setPhoneDropOff}
@@ -894,13 +880,13 @@ export default function PackageEditScreen() {
                   />
                 </View>
 
-                <Text style={styles.label}>Location</Text>
+                <Text style={styles.label}>{t('packageForm.location')}</Text>
                 <View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => setModalDropOffVisible(true)}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder="Location" 
+                    placeholder={t('packageForm.location')} 
                     value={locationDropOff} 
                     onChangeText={setLocationDropOff} 
                     style={styles.input} 
@@ -913,34 +899,29 @@ export default function PackageEditScreen() {
                       {/* Map View */}
                       {mode === 'map' && (
                         <>
-                          <MapView
-                            key="dropoff-map"
-                            style={{ flex: 1 }}
-                            region={regionDropOff || {
-                              latitude: 0,
-                              longitude: 0,
-                              latitudeDelta: 0.01,
-                              longitudeDelta: 0.01,
-                            }}
-                            onPress={handleMapPressDropOff}
-                            onLayout={() => {
-                              if (markerDropOff) {
-                                setRegionDropOff({
-                                  latitude: markerDropOff.latitude,
-                                  longitude: markerDropOff.longitude,
-                                  latitudeDelta: 0.01,
-                                  longitudeDelta: 0.01,
-                                });
-                              }
-                            }}
-                          >
-                            {markerDropOff && (
-                              <Marker 
-                                coordinate={markerDropOff}
-                              />
-                            )}
-                          </MapView>
-                          <Text style={styles.mapHint}>Tap on the map to select location</Text>
+                          {regionDropOff && (
+                            <>
+                              <MapView
+                                key="dropoff-map"
+                                style={{ flex: 1 }}
+                                region={regionDropOff}
+                                onPress={handleMapPressDropOff}
+                                onLayout={() => {
+                                  if (markerDropOff) {
+                                    setRegionDropOff({
+                                      latitude: markerDropOff.latitude,
+                                      longitude: markerDropOff.longitude,
+                                      latitudeDelta: 0.01,
+                                      longitudeDelta: 0.01,
+                                    });
+                                  }
+                                }}
+                              >
+                                {markerDropOff && <Marker coordinate={markerDropOff} />}
+                              </MapView>
+                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
+                            </>
+                          )}
                         </>
                       )}
 
@@ -948,7 +929,7 @@ export default function PackageEditScreen() {
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
                           <TextInput
-                            placeholder="Type address here"
+                            placeholder={t('packageForm.location')}
                             value={locationDropOff}
                             onChangeText={setLocationDropOff}
                             style={styles.manualInput}
@@ -970,30 +951,30 @@ export default function PackageEditScreen() {
                           style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
                           onPress={() => setMode('map')}
                         >
-                          <Text style={styles.toggleText}>Pick from Map</Text>
+                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
                           onPress={() => setMode('manual')}
                         >
-                          <Text style={styles.toggleText}>Enter Manually</Text>
+                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
                       </View>
                       <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 160, alignSelf: 'center'}]} 
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 220, alignSelf: 'center'}]} 
                           onPress={() => setModalDropOffVisible(false)}
                         >
-                          <Text style={styles.toggleText}>Use This Address</Text>
+                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                   </Modal>
                 </View>
 
-                <Text style={styles.label}>More details</Text>
+                <Text style={styles.label}>{t('packageForm.moreDetails')}</Text>
                 <View style={styles.inputContainer}>
                   <TextInput 
-                    placeholder="Write here..." 
+                    placeholder={t('packageForm.moreDetails')} 
                     value={detailsDropOff} 
                     onChangeText={setDetailsDropOff} 
                     style={styles.input} 
@@ -1003,6 +984,7 @@ export default function PackageEditScreen() {
                     onSubmitEditing={handleReturnKey}
                   />
                 </View>
+
                 {submitButton}
 
               </View>
@@ -1179,6 +1161,7 @@ const styles = StyleSheet.create({
   toggleText: {
     color: '#fff',
     fontWeight: 'bold',
+    alignSelf: 'center',
   },
   mapHint: {
     textAlign: 'center',

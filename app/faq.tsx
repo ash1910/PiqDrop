@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -38,6 +39,7 @@ interface FAQ {
 }
 
 export default function SafetyScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -154,7 +156,7 @@ export default function SafetyScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>FAQ</Text>
+          <Text style={styles.pageTitle}>{t('faq.title')}</Text>
         </Animated.View>
 
         <View style={styles.form}>
@@ -165,7 +167,7 @@ export default function SafetyScreen() {
             </View>
             <TextInput
               style={styles.searchBar}
-              placeholder="Search"
+              placeholder={t('faq.search')}
               placeholderTextColor="#BDBDBD"
               value={search}
               onChangeText={setSearch}
@@ -177,11 +179,12 @@ export default function SafetyScreen() {
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>{t('faq.loading')}</Text>
               </View>
             ) : error ? (
-              <Text style={styles.errorText}>{error}</Text>
+              <Text style={styles.errorText}>{t('faq.error')}</Text>
             ) : filteredFaqs.length === 0 ? (
-              <Text style={{color: '#BDBDBD', textAlign: 'center', marginTop: 32}}>No FAQs found.</Text>
+              <Text style={{color: '#BDBDBD', textAlign: 'center', marginTop: 32}}>{t('faq.noFaqsFound')}</Text>
             ) : (
               filteredFaqs.map((faq, idx) => (
                 <View key={idx} style={styles.accordionItem}>
@@ -210,7 +213,7 @@ export default function SafetyScreen() {
               onPress={() => router.push('/supportService')} 
             >
               <HeadphonesRoundIcon size={20} color={COLORS.buttonText} />
-              <Text style={styles.continueButtonText}>Get Support</Text>
+              <Text style={styles.continueButtonText}>{t('faq.getSupport')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -222,7 +225,7 @@ export default function SafetyScreen() {
             onPress={() => router.push('/supportService')} 
           >
             <HeadphonesRoundIcon size={20} color={COLORS.buttonText} />
-            <Text style={styles.continueButtonText}>Get Support</Text>
+            <Text style={styles.continueButtonText}>{t('faq.getSupport')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -552,6 +555,12 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     textAlign: 'center',
     marginTop: 32,
+    fontFamily: 'nunito-medium',
+    fontSize: 16,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: COLORS.textSecondary,
     fontFamily: 'nunito-medium',
     fontSize: 16,
   },

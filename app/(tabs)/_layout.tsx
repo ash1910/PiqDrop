@@ -1,6 +1,7 @@
 import { Tabs, router } from 'expo-router';
 import React from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -13,6 +14,7 @@ import { AccountIcon } from '@/components/icons/AccountIcon';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
 
   const COLORS = {
     primary: '#55B086',
@@ -55,14 +57,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('navigation.home'),
           tabBarIcon: ({ color }) => <HomeIcon size={25} color={color} />,
         }}
       />
       <Tabs.Screen
         name="message"
         options={{
-          title: 'Messages',
+          title: t('navigation.messages'),
           tabBarIcon: ({ color }) => <MessageIcon size={25} color={color} />,
         }}
       />
@@ -78,14 +80,14 @@ export default function TabLayout() {
           },
         }}
         options={{
-          title: 'Manage',
+          title: t('navigation.manage'),
           tabBarIcon: ({ color }) => <ManageIcon size={25} color={color} />,
         }}
       />
       <Tabs.Screen
         name="account"
         options={{
-          title: 'Account',
+          title: t('navigation.account'),
           tabBarIcon: ({ color }) => <AccountIcon size={25} color={color} />,
         }}
       />

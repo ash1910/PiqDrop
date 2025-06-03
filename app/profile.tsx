@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
 import Animated, {
   interpolate,
@@ -34,6 +35,7 @@ const COLORS = {
 };
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false); 
   const [country, setCountry] = useState<Country | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
@@ -68,45 +70,47 @@ export default function ProfileScreen() {
     StatusBar.setBarStyle('dark-content');
   }, []);
 
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const user = await authService.getCurrentUser();
-        if (user) {
-          // Set name by combining first_name and last_name
-          setName(`${user.first_name} ${user.last_name}`);
-          setEmail(user.email);
-          setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
+  const loadUserData = async () => {
+    try {
+      const user = await authService.getCurrentUser();
+      if (user) {
+        // Set name by combining first_name and last_name
+        setName(`${user.first_name} ${user.last_name}`);
+        setEmail(user.email);
+        setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
 
-          if (user.image) {
-            const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
-            setSenderProfileImage(user.image ? {uri: `${baseURLWithoutApi}/${user.image}`} : require('@/assets/img/profile-blank.png'));
-          }
-          
-          // Set phone and country code from mobile if available
-          if (user.mobile) {
-            const phoneNumber = parsePhoneNumber(user.mobile);
+        if (user.image) {
+          const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
+          setSenderProfileImage(user.image ? {uri: `${baseURLWithoutApi}/${user.image}`} : require('@/assets/img/profile-blank.png'));
+        }
+        
+        // Set phone and country code from mobile if available
+        if (user.mobile) {
+          const phoneNumber = parsePhoneNumber(user.mobile);
 
-            if (phoneNumber && phoneNumber.isValid()) {
-              const cca2 = phoneNumber.country; // e.g., "US"
-              const callCode = phoneNumber.countryCallingCode; // e.g., "1"
-              const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
+          if (phoneNumber && phoneNumber.isValid()) {
+            const cca2 = phoneNumber.country; // e.g., "US"
+            const callCode = phoneNumber.countryCallingCode; // e.g., "1"
+            const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
 
-              setCountryCode(cca2 as Country['cca2']);
-              setCallingCode(callCode as string);
-              setPhone(nationalNumber as string);
-            } else {
-              console.warn('Invalid phone number:', user.mobile);
-            }
+            setCountryCode(cca2 as Country['cca2']);
+            setCallingCode(callCode as string);
+            setPhone(nationalNumber as string);
+          } else {
+            console.warn('Invalid phone number:', user.mobile);
           }
         }
-      } catch (error) {
-        console.error('Error loading user data:', error);
       }
-    };
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
 
-    loadUserData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -143,7 +147,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Profile</Text>
+          <Text style={styles.pageTitle}>{t('profile.title')}</Text>
         </Animated.View>
 
         <View style={styles.form}>
@@ -162,7 +166,7 @@ export default function ProfileScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Full Name</Text>
+              <Text style={styles.sectionTitle}>{t('profile.sections.fullName')}</Text>
             </View>
             <View style={styles.card}>
               <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
@@ -177,7 +181,7 @@ export default function ProfileScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Email</Text>
+              <Text style={styles.sectionTitle}>{t('profile.sections.email')}</Text>
             </View>
             <View style={styles.card}>
               <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
@@ -192,7 +196,7 @@ export default function ProfileScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Gender</Text>
+              <Text style={styles.sectionTitle}>{t('profile.sections.gender')}</Text>
             </View>
             <View style={styles.card}>
               <TouchableOpacity style={styles.row} onPress={() => router.push('/updateProfile')}>
@@ -207,7 +211,7 @@ export default function ProfileScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Mobile</Text>
+              <Text style={styles.sectionTitle}>{t('profile.sections.mobile')}</Text>
             </View>
             <View style={styles.card}>
               <TouchableOpacity style={[styles.row, {paddingVertical: 12}]} onPress={() => router.push('/updateProfile')}>
@@ -241,7 +245,7 @@ export default function ProfileScreen() {
             style={styles.continueButton}
             onPress={() => router.push('/updateProfile')}
           >
-            <Text style={styles.continueButtonText}>Edit Info</Text>
+            <Text style={styles.continueButtonText}>{t('profile.actions.editInfo')}</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -28,44 +29,24 @@ const COLORS = {
 };
 
 export default function MessageScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     {
       id: '1',
-      text: 'Hello, Good day!',
-      timestamp: '2025-01-02T10:01:00',
+      text: t('supportService.customerService.greeting'),
+      timestamp: new Date().toISOString(),
       sentByMe: false,
       avatar: require('@/assets/icons/robot.png'),
     },
     
     {
       id: '2', 
-      text: 'i’am a Customer service, is there a problem? so i can help you solve it.',
-      timestamp: '2025-01-02T10:01:00',
+      text: t('supportService.customerService.intro'),
+      timestamp: new Date().toISOString(),
       sentByMe: false,
       avatar: require('@/assets/icons/robot.png'),
-    },
-    {
-      id: '3',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do',
-      timestamp: '2025-01-02T10:00:00',
-      sentByMe: true,
-      avatar: require('@/assets/images/profile_pic_1.jpg'),
-    },
-    {
-      id: '4',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do ',
-      timestamp: '2025-01-02T10:01:00',
-      sentByMe: false,
-      avatar: require('@/assets/icons/robot.png'),
-    },
-    {
-      id: '5',
-      text: 'Lorem ipsum dolor sit amet, consectetur',
-      timestamp: '2025-01-02T10:00:00',
-      sentByMe: true,
-      avatar: require('@/assets/images/profile_pic.jpg'),
     },
   ]);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -155,7 +136,7 @@ export default function MessageScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.push('/(tabs)/account')}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Support Service</Text>
+          <Text style={styles.pageTitle}>{t('supportService.title')}</Text>
           <View style={styles.callIcon}></View>
         </Animated.View>
 
@@ -163,7 +144,7 @@ export default function MessageScreen() {
           {/* Date Separator */}
           <View style={styles.dateSeparatorWrapper}>
             <View style={styles.dateSeparatorLine} />
-            <Text style={styles.dateSeparatorText}>Today, 20:08 pm</Text>
+            <Text style={styles.dateSeparatorText}>{t('supportService.today')}, {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
             <View style={styles.dateSeparatorLine} />
           </View>
           {/* Messages */}
@@ -190,7 +171,7 @@ export default function MessageScreen() {
           <View style={styles.inputBar}>
             <TextInput
               style={styles.input}
-              placeholder="Type a message"
+              placeholder={t('supportService.placeholder')}
               value={input}
               onChangeText={setInput}
             />

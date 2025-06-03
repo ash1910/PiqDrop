@@ -30,26 +30,45 @@ interface ResetPasswordData {
   password_confirmation: string;
 }
 
+export interface SettingsData {
+  language?: 'en' | 'es';
+  place?: {
+    pickup?: {
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+    };
+    dropoff?: {
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+    };
+  };
+}
+
+export interface UserData {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  mobile: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  image: string | null;
+  gender: string;
+  nationality: string;
+  date_of_birth: string | null;
+  document: string | null;
+  is_verified: number;
+  settings: SettingsData | string;
+}
+
 interface LoginResponse {
   access_token: string;
   token_type: string;
   message: string;
-  user: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-    mobile: string | null;
-    address: string | null;
-    latitude: number | null;
-    longitude: number | null;
-    image: string | null;
-    gender: string;
-    nationality: string;
-    date_of_birth: string | null;
-    document: string | null;
-    is_verified: number;
-  };
+  user: UserData;
 }
 
 class AuthService {
@@ -272,6 +291,66 @@ class AuthService {
     } catch (error: any) {
       console.error('Update User Profile Error:', error);
       throw error;
+    }
+  }
+
+  async updateUserSettings(settings: SettingsData) {
+    try {
+      const response = await api.post('/update-settings', settings);
+      const { user } = response.data;
+
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+
+      return user;
+    } catch (error: any) {
+      console.error('Update User Settings Error:', error);
+      throw error;
+    }
+  }
+
+  async uploadImage(imageUri: string, type: 'profile' | 'id_card') {
+    try { 
+      
+      const formData = new FormData();
+      formData.append('image', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: `${type}_${Date.now()}.jpg`
+      } as any);
+      formData.append('type', type === 'profile' ? 'image' : 'document');
+
+      const response = await api.post('/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // If this is a profile image upload, update the user's image in auth service
+      if (type === 'profile' && response.data?.data?.image) {
+        await authService.updateUserImage(response.data.data.image);
+      }
+      if (type === 'id_card' && response.data?.data?.document) {
+        await authService.updateUserDocument(response.data.data.document);
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error(`Error uploading ${type} image:`, error);
+      let errorMessage = `Failed to upload ${type} image. Please try again.`;
+      
+      if (error?.response?.data?.errors) {
+        // Convert validation errors object to readable message
+        const errors = error.response.data.errors;
+        errorMessage = Object.keys(errors)
+          .map(key => errors[key].join('\n'))
+          .join('\n');
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   }
   

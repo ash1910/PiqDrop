@@ -28,12 +28,12 @@ import { packageService } from '@/services/package.service';
 import { orderService } from '@/services/order.service';
 import type { Package } from '@/services/packageList.service';
 import api from '@/services/api';
+import { useTranslation } from 'react-i18next';
 
 const HEADER_HEIGHT = 80;
 
-const TABS = ['On going', 'Accepted', 'Completed', 'Canceled'];
 const screenWidth = Dimensions.get('window').width;
-const TAB_WIDTH = (screenWidth - 32 - 8) / TABS.length;
+const TAB_WIDTH = (screenWidth - 32 - 8) / 4;
 
 const COLORS = {
   primary: '#55B086',
@@ -47,8 +47,8 @@ const COLORS = {
   subtitle: '#616161',
 };
 
-
 export default function ManageScreen() {
+  const { t } = useTranslation();
   const { refresh } = useLocalSearchParams();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -71,6 +71,13 @@ export default function ManageScreen() {
 
   const [isCanceling, setIsCanceling] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+
+  const TABS = [
+    { id: 'ongoing', label: t('managePage.tabs.ongoing') },
+    { id: 'accepted', label: t('managePage.tabs.accepted') },
+    { id: 'completed', label: t('managePage.tabs.completed') },
+    { id: 'canceled', label: t('managePage.tabs.canceled') }
+  ];
 
   const handlePress = (index: number) => {
     setActiveTab(index);
@@ -177,7 +184,7 @@ export default function ManageScreen() {
         }
         >
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
-          <Text style={styles.pageTitle}>My Orders</Text>
+          <Text style={styles.pageTitle}>{t('managePage.title')}</Text>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.push('/(tabs)/notification')}>
             <BellIcon size={44} />
           </TouchableOpacity>
@@ -212,9 +219,9 @@ export default function ManageScreen() {
           {/* Tab Bar */}
           <View style={styles.tabBar}>
             <Animated.View style={[styles.animatedIndicator, animatedTabStyle]} />
-            {TABS.map((label, index) => (
+            {TABS.map((tab, index) => (
               <TouchableOpacity
-                key={index}
+                key={tab.id}
                 onPress={() => handlePress(index)}
                 style={styles.tabButton}
               >
@@ -224,7 +231,7 @@ export default function ManageScreen() {
                     activeTab === index && styles.activeTabText,
                   ]}
                 >
-                  {label}
+                  {tab.label}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -246,7 +253,7 @@ export default function ManageScreen() {
                   getFilteredPackages().map((pkg, index) => (
                     <View style={styles.card} key={pkg.id}>
                       <View style={styles.cardHeader}>
-                        <Text style={styles.cardTitle}>Delivery overview</Text>
+                        <Text style={styles.cardTitle}>{t('managePage.deliveryOverview')}</Text>
                         {(pkg.order.status === 'ongoing' || pkg.order.status === 'active' || pkg.order.status === 'completed') && (
                         <TouchableOpacity onPress={() => {
                           setSelectedPackage(pkg);
@@ -310,10 +317,10 @@ export default function ManageScreen() {
                               '#F63F3F'
                           }
                         ]}>
-                          {pkg.order.status === 'ongoing' ? 'In Progress' :
-                           pkg.order.status === 'active' ? 'Accepted' :
-                           pkg.order.status === 'completed' ? 'Completed' :
-                           'Canceled'}
+                          {pkg.order.status === 'ongoing' ? t('managePage.orderStatus.inProgress') :
+                           pkg.order.status === 'active' ? t('managePage.orderStatus.accepted') :
+                           pkg.order.status === 'completed' ? t('managePage.orderStatus.completed') :
+                           t('managePage.orderStatus.canceled')}
                         </Text>
                       </View>
                     </View>
@@ -322,16 +329,16 @@ export default function ManageScreen() {
                   <View style={styles.emptyContainer}>
                     <Image source={require('@/assets/images/empty_board.png')} style={styles.emptyImage} />
                     <Text style={styles.messageHeader}>
-                      {activeTab === 0 ? "You don't have an order yet" :
-                       activeTab === 1 ? "No accepted orders" :
-                       activeTab === 2 ? "Completed orders will show here" :
-                       "Canceled orders list empty"}
+                      {activeTab === 0 ? t('managePage.emptyStates.ongoing.title') :
+                       activeTab === 1 ? t('managePage.emptyStates.accepted.title') :
+                       activeTab === 2 ? t('managePage.emptyStates.completed.title') :
+                       t('managePage.emptyStates.canceled.title')}
                     </Text>
                     <Text style={styles.message}>
-                      {activeTab === 0 ? "You don't have ongoing orders at this time" :
-                       activeTab === 1 ? "You don't have accepted orders at this time" :
-                       activeTab === 2 ? "You don't have completed orders at this time" :
-                       "You don't have canceled orders at this time"}
+                      {activeTab === 0 ? t('managePage.emptyStates.ongoing.message') :
+                       activeTab === 1 ? t('managePage.emptyStates.accepted.message') :
+                       activeTab === 2 ? t('managePage.emptyStates.completed.message') :
+                       t('managePage.emptyStates.canceled.message')}
                     </Text>
                   </View>
                 )}
@@ -392,7 +399,7 @@ export default function ManageScreen() {
                     {isCompleting ? (
                       <ActivityIndicator color={COLORS.text} style={styles.modalOptionText} />
                     ) : (
-                      <Text style={styles.modalOptionText}>Complete Delivery</Text>
+                      <Text style={styles.modalOptionText}>{t('managePage.actions.completeDelivery')}</Text>
                     )}
                    </TouchableOpacity>
                   )}
@@ -403,7 +410,7 @@ export default function ManageScreen() {
                     setShouldOpenThird(true);
                     }}>
                     <RoundedCrossIcon size={20} />
-                    <Text style={styles.modalOptionText}>Cancel Delivery</Text>
+                    <Text style={styles.modalOptionText}>{t('managePage.actions.cancelDelivery')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
                     setModalVisible(false);
@@ -413,7 +420,7 @@ export default function ManageScreen() {
                     });
                   }}>
                     <RoundedEditIcon size={20} />
-                    <Text style={styles.modalOptionText}>Edit Delivery</Text>
+                    <Text style={styles.modalOptionText}>{t('managePage.actions.editDelivery')}</Text>
                   </TouchableOpacity>
                   </>
                   )}
@@ -430,7 +437,7 @@ export default function ManageScreen() {
                       });
                     }}>
                       <RoundedEditIcon size={20} />
-                      <Text style={styles.modalOptionText}>Leave a review</Text>
+                      <Text style={styles.modalOptionText}>{t('managePage.actions.leaveReview')}</Text>
                     </TouchableOpacity>
                   )}
                 </View> 
@@ -448,8 +455,8 @@ export default function ManageScreen() {
                   <View style={styles.iconContainer}>
                     <SuccessBadgeIcon />
                   </View>
-                  <Text style={styles.modalDeliveryContentHeader}>Delivery completed!</Text>
-                  <Text style={styles.modalDeliveryContentText}>Please, let's know about your experience and the service provided to you by the dropper. This will enable us to improve our system. Thank you for using PiqDrop!</Text>
+                  <Text style={styles.modalDeliveryContentHeader}>{t('managePage.deliveryCompleted.title')}</Text>
+                  <Text style={styles.modalDeliveryContentText}>{t('managePage.deliveryCompleted.message')}</Text>
                   <TouchableOpacity style={[styles.loginButton, { marginBottom: 14}]} onPress={() => {
                     setModalDeliveryCompletedVisible(false);
                     router.push({
@@ -457,10 +464,10 @@ export default function ManageScreen() {
                       params: { orderData: JSON.stringify(selectedPackage) }
                     });
                     }}>
-                    <Text style={styles.loginText}>Leave a review</Text>
+                    <Text style={styles.loginText}>{t('managePage.deliveryCompleted.leaveReview')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} onPress={() => setModalDeliveryCompletedVisible(false)}>
-                    <Text style={[styles.loginText, {color: COLORS.text}]}>Maybe later</Text>
+                    <Text style={[styles.loginText, {color: COLORS.text}]}>{t('managePage.deliveryCompleted.maybeLater')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -475,7 +482,7 @@ export default function ManageScreen() {
               <View style={styles.modalContainer}>
                 <View style={[styles.modalContent, {paddingBottom: 24}]}>
                   <View style={[styles.modalToggleButton, {marginBottom: 24}]}></View>
-                  <Text style={styles.modalTitle}>Cancel Confirmation</Text>
+                  <Text style={styles.modalTitle}>{t('managePage.cancelConfirmation.title')}</Text>
                   {/* Order Summary Card */}
                   <View style={styles.orderSummaryCard}>
                     <View style={styles.orderSummaryRow}>
@@ -499,21 +506,21 @@ export default function ManageScreen() {
                   </View>
 
                   <View style={styles.pickupDetailsRow}>
-                    <Text style={styles.pickupDetailsLabel}>From:</Text>
+                    <Text style={styles.pickupDetailsLabel}>{t('managePage.cancelConfirmation.from')}</Text>
                     <Text style={styles.pickupDetailsValue}>{selectedPackage?.pickup.address}</Text>
                   </View>
                   <View style={styles.pickupDetailsRow}>
-                    <Text style={styles.pickupDetailsLabel}>To:</Text>
+                    <Text style={styles.pickupDetailsLabel}>{t('managePage.cancelConfirmation.to')}</Text>
                     <Text style={styles.pickupDetailsValue}>{selectedPackage?.drop.address}</Text>
                   </View>
                   <View style={styles.pickupDetailsRow}>
-                    <Text style={styles.pickupDetailsLabel}>Date:</Text>
+                    <Text style={styles.pickupDetailsLabel}>{t('managePage.cancelConfirmation.date')}</Text>
                     <Text style={styles.pickupDetailsValue}>{selectedPackage?.pickup.date} {selectedPackage?.pickup.time}</Text>
                   </View>
 
                   <View style={styles.modalButtonContainer}>
                     <TouchableOpacity style={[styles.modalButton, {backgroundColor: '#E6E6E6'}]} onPress={() => setModalCancelDeliveryVisible(false)}>
-                      <Text style={[styles.modalButtonText, {color: COLORS.text}]}>Back</Text>
+                      <Text style={[styles.modalButtonText, {color: COLORS.text}]}>{t('managePage.cancelConfirmation.back')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={[
@@ -544,7 +551,7 @@ export default function ManageScreen() {
                       {isCanceling ? (
                         <ActivityIndicator color={COLORS.buttonText} />
                       ) : (
-                        <Text style={styles.modalButtonText}>Yes Cancel !</Text>
+                        <Text style={styles.modalButtonText}>{t('managePage.cancelConfirmation.confirmCancel')}</Text>
                       )}
                     </TouchableOpacity>
                   </View>

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Share, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -30,6 +30,8 @@ import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { authService } from '@/services/auth.service';
 import api from '@/services/api';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES } from '@/constants/languages';
 
 const HEADER_HEIGHT = 156;
 const { width } = Dimensions.get('window');
@@ -45,20 +47,21 @@ const COLORS = {
   divider: '#D9DFD9',
 };
 
-const SUPPORTED_LANGUAGES = [
-  'English',
-  'Hindi',
-  'Spanish',
-  'Arabic',
-  'Portuguese',
-  'Russian',
-  'Japanese',
-  'French',
-  'Swedish',
-  'German',
-];
+interface Place {
+  id: number;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}
+
+interface SavedPlaces {
+  pickup: Place | null;
+  dropoff: Place | null;
+}
 
 export default function AccountScreen() {
+  const { t, i18n } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -66,14 +69,13 @@ export default function AccountScreen() {
   const [showSavedPlacesModal, setShowSavedPlacesModal] = useState(false);
   const [showAddPlaceModal, setShowAddPlaceModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const [selectedLanguage, setSelectedLanguage] = useState('en'); 
   const [legalContent, setLegalContent] = useState({ title: '', content: '' });
-  const [savedPlaces, setSavedPlaces] = useState([
-    { id: 1, name: 'Home', address: '123 Main St, City, State' },
-    { id: 2, name: 'Work', address: '456 Business Ave, City, State' },
-    { id: 3, name: 'Gym', address: '789 Fitness Blvd, City, State' },
-  ]);
-  const [newPlaceName, setNewPlaceName] = useState('');
+  const [savedPlaces, setSavedPlaces] = useState<SavedPlaces>({
+    pickup: null,
+    dropoff: null
+  });
+  const [newPlaceType, setNewPlaceType] = useState<'pickup' | 'dropoff'>('pickup');
   const [newPlaceAddress, setNewPlaceAddress] = useState('');
   const [locationMode, setLocationMode] = useState('map');
   const [marker, setMarker] = useState({
@@ -110,12 +112,26 @@ export default function AccountScreen() {
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
-    getUser();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      getUser();
+    }, [])
+  );
 
   const getUser = async () => {
     const user = await authService.getCurrentUser();
     setUser(user);
+
+    // Load saved language from user settings
+    if (user?.settings) {
+      const settings = typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings;
+      if (settings.language && SUPPORTED_LANGUAGES.some(lang => lang.code === settings.language)) {
+        await i18n.changeLanguage(settings.language);
+        setSelectedLanguage(settings.language);
+      }
+    }
   };
 
   useEffect(() => {
@@ -163,8 +179,81 @@ export default function AccountScreen() {
     setShowLegalModal(true);
   };
 
-  const handleDeletePlace = (id: number) => {
-    setSavedPlaces(savedPlaces.filter(place => place.id !== id));
+  const loadSavedPlaces = async () => {
+    try {
+      const user = await authService.getCurrentUser();
+      if (user && user.settings) {
+        const settings = typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings;
+        if (settings.place) {
+          setSavedPlaces({
+            pickup: settings.place.pickup ? {
+              id: Date.now(),
+              name: 'Pickup',
+              address: settings.place.pickup.address,
+              latitude: settings.place.pickup.latitude,
+              longitude: settings.place.pickup.longitude
+            } : null,
+            dropoff: settings.place.dropoff ? {
+              id: Date.now(),
+              name: 'Dropoff',
+              address: settings.place.dropoff.address,
+              latitude: settings.place.dropoff.latitude,
+              longitude: settings.place.dropoff.longitude
+            } : null
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved places:', error);
+    }
+  };
+
+  const savePlaceToSettings = async (type: 'pickup' | 'dropoff', place: Place | null) => {
+    try {
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const currentSettings = user.settings ? 
+          (typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings) 
+          : {};
+
+        // Ensure place object exists and preserve existing places
+        const currentPlaces = currentSettings.place || {};
+        
+        const updatedSettings = {
+          ...currentSettings,
+          place: {
+            ...currentPlaces, // Preserve all existing places
+            [type]: place ? {
+              address: place.address,
+              latitude: place.latitude,
+              longitude: place.longitude
+            } : null
+          }
+        };
+
+        await api.post('/update-settings', {
+          settings: updatedSettings
+        });
+
+        // Update local state
+        setSavedPlaces(prev => ({
+          ...prev,
+          [type]: place
+        }));
+      }
+    } catch (error) {
+      console.error('Error saving place:', error);
+      Alert.alert('Error', 'Failed to save place. Please try again.');
+    }
+  };
+
+  // Load saved places when component mounts
+  useEffect(() => {
+    loadSavedPlaces();
+  }, []);
+
+  const handleDeletePlace = async (type: 'pickup' | 'dropoff') => {
+    await savePlaceToSettings(type, null);
   };
 
   const handleEditPlace = (id: number) => {
@@ -200,17 +289,110 @@ export default function AccountScreen() {
     }
   };
 
-  const handleAddPlace = () => {
-    if (newPlaceName && newPlaceAddress) {
-      const newPlace = {
-        id: savedPlaces.length + 1,
-        name: newPlaceName,
+  const geocodeAddress = async (address: string) => {
+    try {
+      const geocodedLocations = await Location.geocodeAsync(address);
+      if (geocodedLocations && geocodedLocations.length > 0) {
+        const { latitude, longitude } = geocodedLocations[0];
+        setMarker({ latitude, longitude });
+        setRegion({
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+        return { latitude, longitude };
+      }
+      return null;
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      return null;
+    }
+  };
+
+  const handleAddPlace = async () => {
+    if (!newPlaceAddress) return;
+
+    try {
+      let coordinates;
+      
+      if (locationMode === 'manual') {
+        // For manual address entry, get coordinates through geocoding
+        coordinates = await geocodeAddress(newPlaceAddress);
+        if (!coordinates) {
+          Alert.alert('Error', 'Could not find location for the entered address. Please try again or use the map.');
+          return;
+        }
+      } else {
+        // For map mode, use the marker coordinates
+        if (!marker) {
+          Alert.alert('Error', 'Please select a location on the map.');
+          return;
+        }
+        coordinates = marker;
+      }
+
+      const newPlace: Place = {
+        id: Date.now(),
+        name: newPlaceType === 'pickup' ? 'Pickup' : 'Dropoff',
         address: newPlaceAddress,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
       };
-      setSavedPlaces([...savedPlaces, newPlace]);
-      setNewPlaceName('');
+
+      await savePlaceToSettings(newPlaceType, newPlace);
       setNewPlaceAddress('');
+      setMarker({
+        latitude: 0,
+        longitude: 0,
+      });
       setShowAddPlaceModal(false);
+    } catch (error) {
+      console.error('Error adding place:', error);
+      Alert.alert('Error', 'Failed to add place. Please try again.');
+    }
+  };
+
+  // Add debounced geocoding when address is entered manually
+  useEffect(() => {
+    if (locationMode === 'manual' && newPlaceAddress) {
+      const timer = setTimeout(() => {
+        geocodeAddress(newPlaceAddress);
+      }, 1000); // Debounce for 1 second
+
+      return () => clearTimeout(timer);
+    }
+  }, [locationMode, newPlaceAddress]);
+
+  const handleLanguageChange = async (language: string) => {
+    try {
+      // Get current user and their settings
+      const user = await authService.getCurrentUser();
+      if (user) {
+        // Parse existing settings or create new object
+        const currentSettings = user.settings ? 
+          (typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings) 
+          : {};
+
+        // Update settings with new language
+        const updatedSettings = {
+          ...currentSettings,
+          language: language
+        };
+
+        // Update i18n and local state
+        await i18n.changeLanguage(language);
+        setSelectedLanguage(language);
+        setShowLanguageModal(false);
+
+        // Save to server
+        await api.post('/update-settings', {
+          settings: updatedSettings
+        });
+      }
+    } catch (error) {
+      console.error('Error changing language:', error);
+      Alert.alert('Error', 'Failed to change language. Please try again.');
     }
   };
 
@@ -229,7 +411,7 @@ export default function AccountScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Account</Text>
+          <Text style={styles.pageTitle}>{t('account.title')}</Text>
         </Animated.View>
 
         <View style={styles.form}>
@@ -245,14 +427,14 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>General</Text>
+              <Text style={styles.sectionTitle}>{t('account.sections.general')}</Text>
               <View style={styles.sectionLine} />
             </View>
             <View style={styles.card}>
               <TouchableOpacity style={styles.row} onPress={() => router.push('/profile')}>
                 <View style={styles.rowLeft}>
                   <UserRoundedIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Personal Info</Text>
+                  <Text style={styles.rowLabel}>{t('account.profileInfo.personalInfo')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -260,7 +442,7 @@ export default function AccountScreen() {
               <TouchableOpacity style={styles.row} onPress={() => router.push('/safety')}>
                 <View style={styles.rowLeft}>
                   <SafetyIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Safety</Text>
+                  <Text style={styles.rowLabel}>{t('account.profileInfo.safety')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -268,10 +450,12 @@ export default function AccountScreen() {
               <TouchableOpacity style={styles.row} onPress={() => setShowLanguageModal(true)}>
                 <View style={styles.rowLeft}>
                   <LetterIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Language</Text>
+                  <Text style={styles.rowLabel}>{t('account.profileInfo.language')}</Text>
                 </View>
                 <View style={styles.rowRight}>
-                  <Text style={styles.selectedLanguage}>{selectedLanguage}</Text>
+                  <Text style={styles.selectedLanguage}>
+                    {SUPPORTED_LANGUAGES.find(lang => lang.code === selectedLanguage)?.name || selectedLanguage}
+                  </Text>
                   <RightArrowIcon size={20} color={COLORS.text} />
                 </View>
               </TouchableOpacity>
@@ -280,30 +464,30 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Billing and Places</Text>
+              <Text style={styles.sectionTitle}>{t('account.sections.billingAndPlaces')}</Text>
               <View style={styles.sectionLine} />
             </View>
             <View style={styles.card}>
-              <TouchableOpacity style={styles.row}>
+              {/* <TouchableOpacity style={styles.row}>
                 <View style={styles.rowLeft}>
                   <WalletIcon size={20} color={COLORS.text} />
                   <Text style={styles.rowLabel}>Payment</Text>
+                </View>
+                <RightArrowIcon size={20} color={COLORS.text} />
+              </TouchableOpacity> */}
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.row} onPress={() => setShowSavedPlacesModal(true)}>
+                <View style={styles.rowLeft}>
+                  <PlaceIcon size={20} color={COLORS.text} />
+                  <Text style={styles.rowLabel}>{t('account.billingAndPlaces.savedPlaces')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={() => setShowSavedPlacesModal(true)}>
                 <View style={styles.rowLeft}>
-                  <PlaceIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Saved Places</Text>
-                </View>
-                <RightArrowIcon size={20} color={COLORS.text} />
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => setShowAddPlaceModal(true)}>
-                <View style={styles.rowLeft}>
                   <PlusIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Add a Place</Text>
+                  <Text style={styles.rowLabel}>{t('account.billingAndPlaces.addPlace')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -312,20 +496,20 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Legal</Text>
+              <Text style={styles.sectionTitle}>{t('account.sections.legal')}</Text>
               <View style={styles.sectionLine} />
             </View>
             <View style={styles.card}>
               <TouchableOpacity 
                 style={styles.row}
                 onPress={() => openLegalModal(
-                  'Terms of Use',
+                  t('account.legal.termsOfUse'),
                   'Welcome to PiqDrop. By using our service, you agree to these Terms of Use. Please read them carefully.\n\n1. Service Description\nPiqDrop is a delivery service platform that connects users with delivery partners. We facilitate the delivery of items between users and delivery partners, but we are not a delivery service provider.\n\n2. User Accounts\nYou must be at least 18 years old to use PiqDrop. You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account. You must provide accurate and complete information when creating your account.\n\n3. User Conduct\nYou agree to use PiqDrop only for lawful purposes and in accordance with these Terms. You will not:\n- Use the service for any illegal purposes\n- Harass, abuse, or harm others\n- Attempt to gain unauthorized access to any part of the service\n- Interfere with the proper working of the service\n\n4. Delivery Services\n- Delivery partners are independent contractors, not employees of PiqDrop\n- Delivery times are estimates and not guaranteed\n- You are responsible for providing accurate delivery information\n- We reserve the right to refuse service to anyone\n\n5. Payment Terms\n- All payments must be made through our approved payment methods\n- Prices are subject to change without notice\n- Additional fees may apply for special delivery requests\n- Refunds are subject to our refund policy\n\n6. Intellectual Property\nAll content, features, and functionality of PiqDrop are owned by us and are protected by copyright, trademark, and other intellectual property laws.\n\n7. Limitation of Liability\nPiqDrop is not liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service.\n\n8. Modifications to Terms\nWe reserve the right to modify these terms at any time. We will notify users of any material changes via the app or email.\n\n9. Termination\nWe may terminate or suspend your access to PiqDrop immediately, without prior notice, for any breach of these Terms.\n\n10. Governing Law\nThese Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which PiqDrop operates.\n\n11. Contact Information\nFor questions about these Terms, please contact our support team through the app or at support@piqdrop.com.'
                 )}
               >
                 <View style={styles.rowLeft}>
                   <FileIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Terms of Use</Text>
+                  <Text style={styles.rowLabel}>{t('account.legal.termsOfUse')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -333,13 +517,13 @@ export default function AccountScreen() {
               <TouchableOpacity 
                 style={styles.row}
                 onPress={() => openLegalModal(
-                  'Privacy Policy',
+                  t('account.legal.privacyPolicy'),
                   'Your privacy is important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.\n\n1. Information We Collect\nWe collect information that you provide directly to us, including but not limited to your name, email address, phone number, delivery addresses, and any other information you choose to provide.\n\n2. How We Use Your Information\nWe use the information we collect to provide, maintain, and improve our services, to develop new ones, and to protect our company and our users. This includes processing your orders, communicating with you about your account, and sending you updates about our services.\n\n3. Information Sharing and Disclosure\nWe do not share your personal information with third parties except as described in this privacy policy. We may share your information with delivery partners, payment processors, and service providers who assist us in operating our platform.\n\n4. Data Security\nWe implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. This includes encryption, secure servers, and regular security assessments.\n\n5. Your Rights and Choices\nYou have the right to access, correct, or delete your personal information. You can also opt-out of marketing communications and manage your privacy preferences through your account settings.\n\n6. Cookies and Tracking Technologies\nWe use cookies and similar tracking technologies to collect information about your browsing activities and preferences. This helps us improve your experience and provide personalized content.\n\n7. Children\'s Privacy\nOur services are not intended for children under 18 years of age. We do not knowingly collect personal information from children under 18. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.\n\n8. International Data Transfers\nYour information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place to protect your information in compliance with applicable data protection laws.\n\n9. Data Retention\nWe retain your personal information for as long as necessary to fulfill the purposes outlined in this privacy policy, unless a longer retention period is required or permitted by law.\n\n10. Changes to This Policy\nWe may update this privacy policy from time to time. We will notify you of any changes by posting the new privacy policy on this page and updating the "Last Updated" date. We encourage you to review this policy periodically.'
                 )}
               >
                 <View style={styles.rowLeft}>
                   <ShieldKeyholeIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Privacy Policy</Text>
+                  <Text style={styles.rowLabel}>{t('account.legal.privacyPolicy')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -348,14 +532,14 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Personal</Text>
+              <Text style={styles.sectionTitle}>{t('account.sections.personal')}</Text>
               <View style={styles.sectionLine} />
             </View>
             <View style={styles.card}>
               <TouchableOpacity style={styles.row} onPress={() => router.push('/report')}>
                 <View style={styles.rowLeft}>
                   <BugIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Report a Bug</Text>
+                  <Text style={styles.rowLabel}>{t('account.personal.reportBug')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -363,7 +547,7 @@ export default function AccountScreen() {
               <TouchableOpacity style={styles.row} onPress={() => setShowLogoutModal(true)}>
                 <View style={styles.rowLeft}>
                   <FrameIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Logout</Text>
+                  <Text style={styles.rowLabel}>{t('account.personal.logout')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -372,14 +556,14 @@ export default function AccountScreen() {
 
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Social</Text>
+              <Text style={styles.sectionTitle}>{t('account.sections.social')}</Text>
               <View style={styles.sectionLine} />
             </View>
             <View style={styles.card}>
               <TouchableOpacity style={styles.row} onPress={() => router.push('/faq')}>
                 <View style={styles.rowLeft}>
                   <HeadphonesRoundIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Support</Text>
+                  <Text style={styles.rowLabel}>{t('account.social.support')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -399,7 +583,7 @@ export default function AccountScreen() {
               >
                 <View style={styles.rowLeft}>
                   <ShareIcon size={20} color={COLORS.text} />
-                  <Text style={styles.rowLabel}>Share app</Text>
+                  <Text style={styles.rowLabel}>{t('account.social.shareApp')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -411,7 +595,7 @@ export default function AccountScreen() {
               <TouchableOpacity style={styles.row} onPress={() => setShowDeleteAccountModal(true)}>
                 <View style={styles.rowLeft}>
                   <TrashBinMinimalistic2Icon size={20} color={'#FF4949'} />
-                  <Text style={[styles.rowLabel, {color: '#FF4949'}]}>Delete Account</Text>
+                  <Text style={[styles.rowLabel, {color: '#FF4949'}]}>{t('account.deleteAccount')}</Text>
                 </View>
                 <RightArrowIcon size={20} color={'#FF4949'} />
               </TouchableOpacity>
@@ -436,14 +620,14 @@ export default function AccountScreen() {
             <View style={styles.modalIconContainer}>
               <LogoutIcon size={48} color={COLORS.primary} />
             </View>
-            <Text style={styles.modalTitle}>Logout</Text>
-            <Text style={styles.modalText}>Are you sure you want to logout?</Text>
+            <Text style={styles.modalTitle}>{t('account.modals.logout.title')}</Text>
+            <Text style={styles.modalText}>{t('account.modals.logout.message')}</Text>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.modalButtonCancel]} 
                 onPress={() => setShowLogoutModal(false)}
               >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>Cancel</Text>
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>{t('account.modals.logout.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.modalButtonConfirm]} 
@@ -457,11 +641,6 @@ export default function AccountScreen() {
                     console.error('Logout failed:', error);
                     setShowLogoutModal(false);
                     router.replace('/login');
-                    // Alert.alert(
-                    //   'Logout Failed',
-                    //   error.message || 'Something went wrong. Please try again.',
-                    //   [{ text: 'OK' }]
-                    // );
                   } finally {
                     setIsLoggingOut(false);
                   }
@@ -471,7 +650,7 @@ export default function AccountScreen() {
                 {isLoggingOut ? (
                   <ActivityIndicator color={COLORS.buttonText} />
                 ) : (
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Logout</Text>
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>{t('account.modals.logout.confirm')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -494,14 +673,14 @@ export default function AccountScreen() {
             <View style={[styles.modalIconContainer, { backgroundColor: 'rgba(255, 73, 73, 0.1)' }]}>
               <TrashBinMinimalistic2Icon size={48} color={'#FF4949'} />
             </View>
-            <Text style={styles.modalTitle}>Delete Account</Text>
-            <Text style={styles.modalText}>We're sorry to see you go. Please contact our support team to assist you with account deletion. They'll help ensure a smooth process and address any concerns you may have.</Text>
+            <Text style={styles.modalTitle}>{t('account.modals.deleteAccount.title')}</Text>
+            <Text style={styles.modalText}>{t('account.modals.deleteAccount.message')}</Text>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.modalButtonCancel]} 
                 onPress={() => setShowDeleteAccountModal(false)}
               >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>Cancel</Text>
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>{t('account.modals.deleteAccount.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, { backgroundColor: '#FF4949' }]} 
@@ -510,7 +689,7 @@ export default function AccountScreen() {
                   router.push('/faq');
                 }}
               >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Contact Support</Text>
+                <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>{t('account.modals.deleteAccount.contactSupport')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -550,7 +729,7 @@ export default function AccountScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.savedPlacesModalContainer}>
             <View style={styles.legalModalHeader}>
-              <Text style={styles.legalModalTitle}>Saved Places</Text>
+              <Text style={styles.legalModalTitle}>{t('account.modals.savedPlaces.title')}</Text>
               <TouchableOpacity 
                 style={styles.legalModalCloseButton}
                 onPress={() => setShowSavedPlacesModal(false)}
@@ -559,28 +738,83 @@ export default function AccountScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.savedPlacesList}>
-              {savedPlaces.map((place) => (
-                <View key={place.id} style={styles.savedPlaceItem}>
-                  <View style={styles.savedPlaceInfo}>
-                    <Text style={styles.savedPlaceName}>{place.name}</Text>
-                    <Text style={styles.savedPlaceAddress}>{place.address}</Text>
-                  </View>
-                  <View style={styles.savedPlaceActions}>
-                    <TouchableOpacity 
-                      style={styles.savedPlaceActionButton}
-                      onPress={() => handleEditPlace(place.id)}
-                    >
-                      <EditIcon size={20} color={COLORS.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.savedPlaceActionButton}
-                      onPress={() => handleDeletePlace(place.id)}
-                    >
-                      <TrashBinMinimalistic2Icon size={20} color="#FF4949" />
-                    </TouchableOpacity>
-                  </View>
+              {/* Pickup Location */}
+              <View style={styles.savedPlaceItem}>
+                <View style={styles.savedPlaceInfo}>
+                  <Text style={styles.savedPlaceName}>{t('account.modals.savedPlaces.pickupLocation')}</Text>
+                  <Text style={styles.savedPlaceAddress}>
+                    {savedPlaces.pickup ? savedPlaces.pickup.address : t('account.modals.savedPlaces.notSet')}
+                  </Text>
                 </View>
-              ))}
+                <View style={styles.savedPlaceActions}>
+                  <TouchableOpacity 
+                    style={styles.savedPlaceActionButton}
+                    onPress={() => {
+                      setNewPlaceType('pickup');
+                      if (savedPlaces.pickup) {
+                        setNewPlaceAddress(savedPlaces.pickup.address);
+                        setMarker({
+                          latitude: savedPlaces.pickup.latitude,
+                          longitude: savedPlaces.pickup.longitude
+                        });
+                        setRegion({
+                          latitude: savedPlaces.pickup.latitude,
+                          longitude: savedPlaces.pickup.longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01
+                        });
+                      }
+                      setShowAddPlaceModal(true);
+                      setShowSavedPlacesModal(false);
+                    }}
+                  >
+                    {savedPlaces.pickup ? (
+                      <EditIcon size={20} color={COLORS.primary} />
+                    ) : (
+                      <PlusIcon size={20} color={COLORS.primary} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Dropoff Location */}
+              <View style={styles.savedPlaceItem}>
+                <View style={styles.savedPlaceInfo}>
+                  <Text style={styles.savedPlaceName}>{t('account.modals.savedPlaces.dropoffLocation')}</Text>
+                  <Text style={styles.savedPlaceAddress}>
+                    {savedPlaces.dropoff ? savedPlaces.dropoff.address : t('account.modals.savedPlaces.notSet')}
+                  </Text>
+                </View>
+                <View style={styles.savedPlaceActions}>
+                  <TouchableOpacity 
+                    style={styles.savedPlaceActionButton}
+                    onPress={() => {
+                      setNewPlaceType('dropoff');
+                      if (savedPlaces.dropoff) {
+                        setNewPlaceAddress(savedPlaces.dropoff.address);
+                        setMarker({
+                          latitude: savedPlaces.dropoff.latitude,
+                          longitude: savedPlaces.dropoff.longitude
+                        });
+                        setRegion({
+                          latitude: savedPlaces.dropoff.latitude,
+                          longitude: savedPlaces.dropoff.longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01
+                        });
+                      }
+                      setShowAddPlaceModal(true);
+                      setShowSavedPlacesModal(false);
+                    }}
+                  >
+                    {savedPlaces.dropoff ? (
+                      <EditIcon size={20} color={COLORS.primary} />
+                    ) : (
+                      <PlusIcon size={20} color={COLORS.primary} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -594,7 +828,11 @@ export default function AccountScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.addPlaceModalContainer}>
             <View style={styles.legalModalHeader}>
-              <Text style={styles.legalModalTitle}>Add New Place</Text>
+              <Text style={styles.legalModalTitle}>
+                {savedPlaces[newPlaceType] ? 
+                  t('account.modals.addPlace.editTitle', { type: newPlaceType === 'pickup' ? 'Pickup' : 'Dropoff' }) :
+                  t('account.modals.addPlace.addTitle', { type: newPlaceType === 'pickup' ? 'Pickup' : 'Dropoff' })}
+              </Text>
               <TouchableOpacity 
                 style={styles.legalModalCloseButton}
                 onPress={() => setShowAddPlaceModal(false)}
@@ -604,23 +842,12 @@ export default function AccountScreen() {
             </View>
 
             <View style={styles.addPlaceForm}>
-              <Text style={styles.label}>Place Name</Text>
+              <Text style={styles.label}>{t('account.modals.addPlace.address')}</Text>
               <View style={styles.inputContainer}>
                 <LocationIcon size={20} color={COLORS.text} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter place name"
-                  value={newPlaceName}
-                  onChangeText={setNewPlaceName}
-                />
-              </View>
-
-              <Text style={styles.label}>Address</Text>
-              <View style={styles.inputContainer}>
-                <LocationIcon size={20} color={COLORS.text} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Select location"
+                  placeholder={t('account.modals.addPlace.addressPlaceholder')}
                   value={newPlaceAddress}
                   onChangeText={setNewPlaceAddress}
                   onFocus={() => setLocationMode('manual')}
@@ -632,13 +859,13 @@ export default function AccountScreen() {
                   style={[styles.toggleButton, locationMode === 'map' && styles.activeToggle]}
                   onPress={() => setLocationMode('map')}
                 >
-                  <Text style={styles.toggleText}>Pick from Map</Text>
+                  <Text style={styles.toggleText}>{t('account.modals.addPlace.pickFromMap')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.toggleButton, locationMode === 'manual' && styles.activeToggle]}
                   onPress={() => setLocationMode('manual')}
                 >
-                  <Text style={styles.toggleText}>Enter Manually</Text>
+                  <Text style={styles.toggleText}>{t('account.modals.addPlace.enterManually')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -651,16 +878,20 @@ export default function AccountScreen() {
                   >
                     {marker && <Marker coordinate={marker} />}
                   </MapView>
-                  <Text style={styles.mapHint}>Tap on the map to select location</Text>
+                  <Text style={styles.mapHint}>{t('account.modals.addPlace.mapHint')}</Text>
                 </View>
               )}
 
               <TouchableOpacity 
-                style={[styles.continueButton, (!newPlaceName || !newPlaceAddress) && styles.disabledButton]}
+                style={[styles.continueButton, !newPlaceAddress && styles.disabledButton]}
                 onPress={handleAddPlace}
-                disabled={!newPlaceName || !newPlaceAddress}
+                disabled={!newPlaceAddress}
               >
-                <Text style={styles.continueButtonText}>Add Place</Text>
+                <Text style={styles.continueButtonText}>
+                  {savedPlaces[newPlaceType] ? 
+                    t('account.modals.addPlace.updateLocation') :
+                    t('account.modals.addPlace.addLocation')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -688,27 +919,24 @@ export default function AccountScreen() {
             <View style={styles.modalIconContainer}>
               <LetterIcon size={48} color={COLORS.primary} />
             </View>
-            <Text style={styles.modalTitle}>Select Language</Text>
+            <Text style={styles.modalTitle}>{t('account.profileInfo.language')}</Text>
             <ScrollView style={[styles.languageOptions, { height: 400 }]}>
               {SUPPORTED_LANGUAGES.map((language) => (
                 <TouchableOpacity
-                  key={language}
+                  key={language.code}
                   style={[
                     styles.languageOption,
-                    selectedLanguage === language && styles.selectedLanguageOption
+                    selectedLanguage === language.code && styles.selectedLanguageOption
                   ]}
-                  onPress={() => {
-                    setSelectedLanguage(language);
-                    setShowLanguageModal(false);
-                  }}
+                  onPress={() => handleLanguageChange(language.code)}
                 >
                   <Text style={[
                     styles.languageOptionText,
-                    selectedLanguage === language && styles.selectedLanguageOptionText
+                    selectedLanguage === language.code && styles.selectedLanguageOptionText
                   ]}>
-                    {language}
+                    {language.name}
                   </Text>
-                  {selectedLanguage === language && (
+                  {selectedLanguage === language.code && (
                     <Icon name="check" size={20} color={COLORS.primary} />
                   )}
                 </TouchableOpacity>
@@ -718,7 +946,9 @@ export default function AccountScreen() {
               style={[styles.modalButton, styles.modalButtonCancel]} 
               onPress={() => setShowLanguageModal(false)}
             >
-              <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>Close</Text>
+              <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                {t('account.modals.logout.cancel')}
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -853,7 +1083,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -967,11 +1197,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
   },
   savedPlacesList: {
     padding: 20,
@@ -992,7 +1217,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'nunito-bold',
     color: COLORS.text,
-    marginBottom: 4,
   },
   savedPlaceAddress: {
     fontSize: 14,
@@ -1012,67 +1236,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
   },
   addPlaceForm: {
     padding: 20,
-  },
-  mapContainer: {
-    height: 300,
-    marginTop: 20,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  map: {
-    flex: 1,
-  },
-  mapHint: {
-    textAlign: 'center',
-    padding: 10,
-    fontSize: 15,
-    backgroundColor: '#f9f9f9',
-    color: '#444',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: '#f2f2f2',
-    borderRadius: 14,
-    marginTop: 20,
-  },
-  toggleButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginHorizontal: 5,
-    borderRadius: 5,
-    backgroundColor: '#e0e0e0',
-  },
-  activeToggle: {
-    backgroundColor: COLORS.primary,
-  },
-  toggleText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  continueButton: {
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  continueButtonText: {
-    fontSize: 16,
-    fontFamily: 'nunito-bold',
-    color: COLORS.buttonText,
   },
   label: {
     fontSize: 16,
@@ -1084,16 +1250,70 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: COLORS.divider,
     borderRadius: 12,
     padding: 12,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   input: {
     flex: 1,
+    marginLeft: 8,
     fontSize: 16,
     fontFamily: 'nunito-regular',
     color: COLORS.text,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.backgroundWrapper,
+    borderRadius: 12,
+    marginHorizontal: 4,
+  },
+  activeToggle: {
+    backgroundColor: COLORS.primary,
+  },
+  toggleText: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: 'nunito-bold',
+    color: COLORS.text,
+  },
+  mapContainer: {
+    height: 300,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
+  },
+  mapHint: {
+    textAlign: 'center',
+    paddingVertical: 8,
+    fontSize: 14,
+    fontFamily: 'nunito-regular',
+    color: COLORS.subtitle,
+    backgroundColor: COLORS.backgroundWrapper,
+  },
+  continueButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  continueButtonText: {
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+    color: COLORS.buttonText,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   selectedLanguage: {
     fontSize: 14,

@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { RightArrowIcon } from '@/components/icons/RightArrowIcon';
+import { useTranslation } from 'react-i18next';
 
 const HEADER_HEIGHT = 120;
 
@@ -29,6 +30,7 @@ const screenWidth = Dimensions.get('window').width;
 const TAB_WIDTH = (screenWidth - 32 - 8) / TABS.length;
 
 export default function SafetyScreen() {
+  const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -102,11 +104,10 @@ export default function SafetyScreen() {
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Report</Text>
+          <Text style={styles.pageTitle}>{t('report.title')}</Text>
         </Animated.View>
 
         <View style={styles.form}>
-
           <View style={styles.tabContainer}>
             {/* Tab Bar */}
             <View style={styles.tabBar}>
@@ -123,7 +124,7 @@ export default function SafetyScreen() {
                       activeTab === index && styles.activeTabText,
                     ]}
                   >
-                    {label}
+                    {t(`report.tabs.${label.toLowerCase()}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -133,8 +134,8 @@ export default function SafetyScreen() {
               {activeTab === 0 && (
               <>
                 <Image source={require('@/assets/icons/report.png')} style={styles.successImage} />
-                <Text style={styles.successText}>How to report</Text>
-                <Text style={styles.successDescription}>Report all suspecious and inappropriate  behavior immediately.</Text>
+                <Text style={styles.successText}>{t('report.guide.title')}</Text>
+                <Text style={styles.successDescription}>{t('report.guide.description')}</Text>
               </>
               )}
               {activeTab === 1 && (
@@ -143,18 +144,17 @@ export default function SafetyScreen() {
                   source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1828/1828843.png' }} 
                   style={styles.successImage} 
                 />
-                <Text style={styles.successText}>Reporting Tools</Text>
-                <Text style={styles.successDescription}>Use these tools to report and block users, flag content, or contact support for immediate assistance.</Text>
+                <Text style={styles.successText}>{t('report.tools.title')}</Text>
+                <Text style={styles.successDescription}>{t('report.tools.description')}</Text>
                 <View style={styles.toolsContainer}>
-                  <Text style={styles.toolText}>Block User: Tap on a user's profile and select 'Block' to prevent them from contacting you</Text>
-                  <Text style={styles.toolText}>Flag Content: Use the flag icon on any inappropriate content to report it</Text>
-                  <Text style={styles.toolText}>Contact Support: Email support@piqdrop.com for immediate assistance</Text>
+                  <Text style={styles.toolText}>{t('report.tools.blockUser')}</Text>
+                  <Text style={styles.toolText}>{t('report.tools.flagContent')}</Text>
+                  <Text style={styles.toolText}>{t('report.tools.contactSupport')}</Text>
                 </View>
               </>
               )}
             </View>
           </View>
-
         </View>
       </Animated.ScrollView>
       <View style={styles.buttonContainer}>
@@ -162,7 +162,7 @@ export default function SafetyScreen() {
           style={styles.continueButton}
           onPress={() => setModalVisible(true)}
         >
-          <Text style={styles.continueButtonText}>Report</Text>
+          <Text style={styles.continueButtonText}>{t('report.reportButton')}</Text>
         </TouchableOpacity>
       </View>
       <Modal
@@ -173,28 +173,28 @@ export default function SafetyScreen() {
       >
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPressOut={() => setModalVisible(false)}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Report</Text>
+            <Text style={styles.modalTitle}>{t('report.modal.title')}</Text>
             <TouchableOpacity style={styles.modalOption} onPress={() => {
               setModalVisible(false);
-              Alert.alert('An email has been sent to support@piqdrop.com');
+              Alert.alert(t('report.modal.emailSent'));
             }}>
-              <Text style={styles.modalOptionText}>Unsolicited requests for any nude or sexual images.</Text>
+              <Text style={styles.modalOptionText}>{t('report.modal.options.unsolicited')}</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
             </TouchableOpacity>
             <View style={styles.modalDivider} />
             <TouchableOpacity style={styles.modalOption} onPress={() => {
               setModalVisible(false);
-              Alert.alert('An email has been sent to support@piqdrop.com');
+              Alert.alert(t('report.modal.emailSent'));
             }}>
-              <Text style={styles.modalOptionText}>Member under 18.</Text>
+              <Text style={styles.modalOptionText}>{t('report.modal.options.underage')}</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
             </TouchableOpacity>
             <View style={styles.modalDivider} />
             <TouchableOpacity style={styles.modalOption} onPress={() => {
               setModalVisible(false);
-              Alert.alert('An email has been sent to support@piqdrop.com');
+              Alert.alert(t('report.modal.emailSent'));
             }}>
-              <Text style={styles.modalOptionText}>Spam</Text>
+              <Text style={styles.modalOptionText}>{t('report.modal.options.spam')}</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
             </TouchableOpacity>
           </View>
