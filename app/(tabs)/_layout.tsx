@@ -63,6 +63,15 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="message"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push({
+              pathname: '/message',
+              params: { userId: '1', refresh: Date.now() }
+            });
+          },
+        }}
         options={{
           title: t('navigation.messages'),
           tabBarIcon: ({ color }) => <MessageIcon size={25} color={color} />,

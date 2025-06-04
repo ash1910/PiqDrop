@@ -63,6 +63,7 @@ export default function ManageScreen() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState(0);
@@ -121,6 +122,19 @@ export default function ManageScreen() {
       console.error('Error fetching packages:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      const response = await packageListService.getMyPackages();
+      setPackages(response);
+    } catch (err) {
+      setError('Failed to fetch packages');
+      console.error('Error fetching packages:', err);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -210,8 +224,8 @@ export default function ManageScreen() {
         refreshControl={
           <RefreshControl
             tintColor={COLORS.primary}
-            refreshing={false}
-            onRefresh={fetchPackages}
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
           />
         }
         >
@@ -239,7 +253,7 @@ export default function ManageScreen() {
 
           {/* Tab Content */}
           <View style={styles.contentContainer}>
-            {loading ? (
+            {loading && !isRefreshing ? (
               <View style={styles.emptyContainer}>
                 <Text>Loading...</Text>
               </View>
@@ -406,7 +420,7 @@ export default function ManageScreen() {
                     setModalVisible(false);
                     router.push({
                       pathname: '/(tabs)/message',
-                      params: { userId: selectedPackage?.order.dropper?.id, userName: selectedPackage?.order.dropper?.name, userImage: selectedPackage?.order.dropper?.image, userMobile: selectedPackage?.order.dropper?.mobile }
+                      params: { userId: selectedPackage?.order.dropper?.id, userName: selectedPackage?.order.dropper?.name, userImage: selectedPackage?.order.dropper?.image, userMobile: selectedPackage?.order.dropper?.mobile, refresh: Date.now() }
                     });
                   }}>
                     <MessageIcon size={24} color={COLORS.text} />
@@ -455,7 +469,7 @@ export default function ManageScreen() {
                       setModalVisible(false);
                       router.push({
                         pathname: '/(tabs)/message',
-                        params: { userId: selectedPackage?.order.dropper?.id, userName: selectedPackage?.order.dropper?.name, userImage: selectedPackage?.order.dropper?.image, userMobile: selectedPackage?.order.dropper?.mobile }
+                        params: { userId: selectedPackage?.order.dropper?.id, userName: selectedPackage?.order.dropper?.name, userImage: selectedPackage?.order.dropper?.image, userMobile: selectedPackage?.order.dropper?.mobile, refresh: Date.now() }
                       });
                     }}>
                       <MessageIcon size={24} color={COLORS.text} />

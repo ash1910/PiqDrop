@@ -113,6 +113,7 @@ export default function LoginScreen() {
   };
 
   const openPicker = (type: 'nationality' | 'gender') => {
+    confirmPasswordInputRef.current?.blur();
     setPickerType(type);
     setShowPicker(true);
   };

@@ -467,38 +467,18 @@ export default function HomeScreen() {
       };
 
       const response = await packageService.createPackage(packageData);
+      if(response.status === 'success'){
+        console.log("response.data", response.data);
+        router.push({
+          pathname: '/(tabs)/orderDetail',
+          params: { orderData: JSON.stringify(response.data) }
+        });
+        Alert.alert(t('common.success'), t('packageForm.validation.jobPostedSuccess'));
+      }
+      else{
+        Alert.alert(t('common.error'), response.data.message);
+      }
       
-      // Clear form or navigate to success page
-      // setName('');
-      // setPhone('');
-      // setLocation('');
-      // setWeight('');
-      // setPrice('');
-      // setDate(new Date());
-      // setTime(new Date());
-      // setDetails('');
-      // setNameDropOff('');
-      // setPhoneDropOff('');
-      // setLocationDropOff('');
-      // setDetailsDropOff('');
-      // setMarker(null);
-      // setMarkerDropOff(null);
-      // setRegion(null);
-      // setRegionDropOff(null);
-      // setActiveTab('pickup');
-      // setMode('map');
-      // setModalVisible(false);
-      // setModalDropOffVisible(false);
-      // setShowDateModal(false);
-      // setShowTimeModal(false);
-      // setError(null);
-      // setIsSubmitting(false);
-      router.push({
-        pathname: '/(tabs)/orderDetail',
-        params: { orderData: JSON.stringify(response.data) }
-      });
-      console.log("response.data", response.data);
-      Alert.alert(t('common.success'), t('packageForm.validation.jobPostedSuccess'));
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || t('packageForm.validation.createPackageError'));
     } finally {
@@ -530,54 +510,54 @@ export default function HomeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <Animated.View style={[styles.header]}>
+        <View style={styles.headerTopContent}>
+          <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
+          <Text style={styles.appName}>Welcome to PiqDrop.{'\n'}We value you.</Text>
+          <TouchableOpacity style={styles.bellIcon} onPress={() => router.push('/(tabs)/notification')}>
+            <BellIcon size={44} color="white" />
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity 
+          style={[styles.loginButton, isSubmitting && styles.disabledButton]} 
+          onPress={() => handleSubmit()}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color={COLORS.buttonText} />
+          ) : (
+            <Text style={styles.loginText}>{t('packageForm.title')}</Text>
+          )}
+        </TouchableOpacity>
+        {/* Toggle Buttons */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'pickup' && styles.activeButton]}
+            onPress={() => switchTab('pickup')}
+          >
+            <SquareArrowUpIcon size={20} color={COLORS.background} />
+            <Text style={styles.tabText}>
+              {t('packageForm.pickupDetails')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'dropoff' && styles.activeButton]}
+            onPress={() => switchTab('dropoff')}
+          >
+            <SquareArrowDownIcon size={20} color={COLORS.background} />
+            <Text style={styles.tabText}>
+              {t('packageForm.dropoffDetails')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <Animated.View style={[styles.header]}>
-          <View style={styles.headerTopContent}>
-            <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
-            <Text style={styles.appName}>Welcome to PiqDrop.{'\n'}We value you.</Text>
-            <TouchableOpacity style={styles.bellIcon} onPress={() => router.push('/(tabs)/notification')}>
-              <BellIcon size={44} color="white" />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity 
-            style={[styles.loginButton, isSubmitting && styles.disabledButton]} 
-            onPress={() => handleSubmit()}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={COLORS.buttonText} />
-            ) : (
-              <Text style={styles.loginText}>{t('packageForm.title')}</Text>
-            )}
-          </TouchableOpacity>
-          {/* Toggle Buttons */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tabButton, activeTab === 'pickup' && styles.activeButton]}
-              onPress={() => switchTab('pickup')}
-            >
-              <SquareArrowUpIcon size={20} color={COLORS.background} />
-              <Text style={styles.tabText}>
-                {t('packageForm.pickupDetails')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabButton, activeTab === 'dropoff' && styles.activeButton]}
-              onPress={() => switchTab('dropoff')}
-            >
-              <SquareArrowDownIcon size={20} color={COLORS.background} />
-              <Text style={styles.tabText}>
-                {t('packageForm.dropoffDetails')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
 
         <View style={styles.form}>
           {/* Sliding Content */}

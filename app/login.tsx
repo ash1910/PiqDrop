@@ -237,17 +237,17 @@ export default function LoginScreen() {
             <View style={styles.divider} />
           </View>
 
-          <View style={styles.socials}>
+          {/* <View style={styles.socials}>
             <TouchableOpacity style={styles.socialIcon}>
               <PhoneIcon size={24} color={COLORS.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon} onPress={() => router.push('/accountRecovery')}>
+            <TouchableOpacity style={styles.socialIcon}>
               <FacebookIcon size={32} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialIcon}>
               <GoogleIcon size={32} />
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           <View style={styles.signUpRow}>
             <Text style={styles.signUpNoAccountText}>Don't have an account? </Text> 

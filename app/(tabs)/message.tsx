@@ -40,7 +40,7 @@ const COLORS = {
 
 export default function MessageScreen() {
   const { t } = useTranslation();
-  const { userId = '1', userName = 'Support Service', userImage = '', userMobile = '' } = useLocalSearchParams();
+  const { userId = '1', userName = 'Support Service', userImage = '', userMobile = '', refresh = 0 } = useLocalSearchParams();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -48,6 +48,15 @@ export default function MessageScreen() {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const bottomPosition = useSharedValue(86);
+  const pollCountRef = useRef(0);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastMessageIdRef = useRef<number | null>(null);
+  const currentUserIdRef = useRef<string>(typeof userId === 'string' ? userId : '1');
+
+  // Update currentUserIdRef when userId changes
+  useEffect(() => {
+    currentUserIdRef.current = typeof userId === 'string' ? userId : '1';
+  }, [userId]);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -70,23 +79,46 @@ export default function MessageScreen() {
     StatusBar.setBarStyle('dark-content');
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchMessages();
-    }, [userId])
-  );
+  const startPolling = useCallback(() => {
+    console.log('Starting polling, current count:', pollCountRef.current);
+    // Clear any existing interval
+    if (pollIntervalRef.current) {
+      console.log('Clearing existing interval');
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    // Start new polling
+    console.log('Creating new interval');
+    pollIntervalRef.current = setInterval(async () => {
+      console.log('Interval triggered, current count:', pollCountRef.current);
+      if (pollCountRef.current >= 10) {
+        console.log('Reached max count, stopping polling');
+        // Stop polling after 10 attempts
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        return;
+      }
+
+      await fetchMessages();
+      pollCountRef.current += 1;
+      console.log('Polling...', pollCountRef.current);
+    }, 5000); // Poll every 5 seconds
+  }, []);
 
   const fetchMessages = async () => {
     try {
-      const response = await api.get(`/messages/${userId}`);
+      const response = await api.get(`/messages/${currentUserIdRef.current}`);
       if (response.data.status === 'success') {
         let fetchedMessages = response.data.messages;
         
         // Add support messages at the beginning if userId is 1
-        if (userId === '1') {
+        if (currentUserIdRef.current === '1') {
           const supportMessages = [
             {
-              id: -1, // Using negative IDs to avoid conflicts with real messages
+              id: -1,
               sender_id: 1,
               receiver_id: 1,
               message: t('supportService.customerService.greeting'),
@@ -104,12 +136,33 @@ export default function MessageScreen() {
           ];
           fetchedMessages = [...supportMessages, ...fetchedMessages];
         }
+
+        // Get the last message from the fetched messages
+        const lastMessage = fetchedMessages[fetchedMessages.length - 1];
+        
+        // Check if we received new messages by comparing with the last message ID we've seen
+        const hasNewMessages = lastMessage && 
+          lastMessage.id !== lastMessageIdRef.current && 
+          lastMessage.sender_id === parseInt(currentUserIdRef.current);
+        
+        // Update the last message ID we've seen
+        if (lastMessage) {
+          lastMessageIdRef.current = lastMessage.id;
+        }
         
         setMessages(fetchedMessages);
-        // Scroll to bottom after messages are loaded
-        setTimeout(() => {
-          scrollRef.current?.scrollToEnd({ animated: false });
-        }, 100);
+        
+        // If we received new messages, restart polling and reset counter
+        if (hasNewMessages) {
+          console.log('New message received, resetting count to 0');
+          pollCountRef.current = 0;
+          console.log('hasNewMessages', pollCountRef.current);
+          startPolling();
+
+          setTimeout(() => {
+            scrollRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -118,14 +171,28 @@ export default function MessageScreen() {
     }
   };
 
-  // Add effect to scroll to bottom when messages change
-  useEffect(() => {
-    if (messages.length > 0) {
+  // Start polling when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Screen focused, resetting count to 0');
+      fetchMessages();
+      pollCountRef.current = 0;
+      startPolling();
+
       setTimeout(() => {
-        scrollRef.current?.scrollToEnd({ animated: false });
+        scrollRef.current?.scrollToEnd({ animated: true });
       }, 100);
-    }
-  }, [messages]);
+      
+      // Cleanup polling when screen loses focus
+      return () => {
+        console.log('Screen unfocused, cleaning up polling');
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      };
+    }, [userId, refresh])
+  );
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -159,15 +226,17 @@ export default function MessageScreen() {
     if (input.trim()) {
       try {
         const response = await api.post('/messages', {
-          receiver_id: userId,
+          receiver_id: currentUserIdRef.current,
           message: input.trim()
         });
 
         if (response.data.status === 'success') {
-          setMessages(prevMessages => [...prevMessages, response.data.message]);
           setInput('');
-          
-          // Scroll to bottom after sending message
+          await fetchMessages();
+          // Reset poll count and restart polling after sending a message
+          pollCountRef.current = 0;
+          startPolling();
+
           setTimeout(() => {
             scrollRef.current?.scrollToEnd({ animated: true });
           }, 100);
@@ -203,7 +272,15 @@ export default function MessageScreen() {
         refreshControl={
           <RefreshControl
             tintColor={COLORS.primary}
-            onRefresh={fetchMessages}
+            onRefresh={() => {
+              console.log('Refreshing messages');
+              fetchMessages();
+              pollCountRef.current = 0;
+              startPolling();
+              setTimeout(() => {
+                scrollRef.current?.scrollToEnd({ animated: true });
+              }, 100);
+            }}
             refreshing={false}
           />
         }
@@ -219,9 +296,9 @@ export default function MessageScreen() {
           {messages.map((msg) => (
             <View
               key={msg.id}
-              style={msg.sender_id === parseInt(userId as string) ? styles.receivedMsgWrapper : styles.sentMsgWrapper}
+              style={msg.sender_id === parseInt(currentUserIdRef.current) ? styles.receivedMsgWrapper : styles.sentMsgWrapper}
             >
-              {msg.sender_id === parseInt(userId as string) && (
+              {msg.sender_id === parseInt(currentUserIdRef.current) && (
                 <>
                 {msg.sender_id === 1 ? (
                   <Image source={require('@/assets/icons/robot.png')} style={styles.avatar} />
@@ -232,9 +309,9 @@ export default function MessageScreen() {
                 )}
                 </>
               )}
-              <View style={msg.sender_id === parseInt(userId as string) ? styles.receivedBubble : styles.sentBubble}>
-                <Text style={msg.sender_id === parseInt(userId as string) ? styles.receivedText : styles.sentText}>{msg.message}</Text>
-                <Text style={msg.sender_id === parseInt(userId as string) ? styles.receivedTimestamp : styles.sentTimestamp}>
+              <View style={msg.sender_id === parseInt(currentUserIdRef.current) ? styles.receivedBubble : styles.sentBubble}>
+                <Text style={msg.sender_id === parseInt(currentUserIdRef.current) ? styles.receivedText : styles.sentText}>{msg.message}</Text>
+                <Text style={msg.sender_id === parseInt(currentUserIdRef.current) ? styles.receivedTimestamp : styles.sentTimestamp}>
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(msg.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                 </Text>
               </View>

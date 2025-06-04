@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -10,7 +10,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { SuccessIcon } from '@/components/icons/SuccessIcon';
 import { DotIcon } from '@/components/icons/DotIcon';
-import { useTranslation } from 'react-i18next';
+import { getNotifications, Notification } from '@/services/notification.service';
 
 const HEADER_HEIGHT = 80;
 
@@ -25,7 +25,9 @@ const COLORS = {
 };
 
 export default function NotificationScreen() {
-  const { t } = useTranslation();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -49,7 +51,30 @@ export default function NotificationScreen() {
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
+    fetchNotifications();
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      const data = await getNotifications();
+      setNotifications(data);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -76,55 +101,55 @@ export default function NotificationScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <Animated.View style={[styles.header]}>
+        <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
+          <LeftArrowIcon size={44} />
+        </TouchableOpacity>
+        <Text style={styles.pageTitle}>Notifications</Text>
+        <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
+          <Image source={require('@/assets/icons/settings-icon.png')} style={{width: 44, height: 44}} />
+        </TouchableOpacity>
+      </Animated.View>
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <Animated.View style={[styles.header, headerAnimatedStyle]}>
-          <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
-            <LeftArrowIcon size={44} />
-          </TouchableOpacity>
-          <Text style={styles.pageTitle}>{t('notification.title')}</Text>
-          <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
-            <Image source={require('@/assets/icons/settings-icon.png')} style={{width: 44, height: 44}} />
-          </TouchableOpacity>
-        </Animated.View>
-
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }>
         <View style={styles.form}>
-
-          <View style={styles.notificationContainer}>
-            <View style={styles.successContainer}> 
-              <SuccessIcon size={40} />
-              <View style={styles.successTextContainer}>
-                <Text style={styles.successText}>{t('notification.newFeature.title')}</Text>
-                <View style={styles.dateContainer}>
-                  <Text style={styles.dateText}>{t('notification.today')}</Text>
-                  <DotIcon size={3} />
-                  <Text style={styles.dateText}>09:24 AM</Text>
+          {isLoading && !isRefreshing ? (
+            <Text style={styles.loadingText}>Loading notifications...</Text>
+          ) : notifications.length === 0 ? (
+            <Text style={styles.noNotificationsText}>No notifications found</Text>
+          ) : (
+            notifications.map((notification) => (
+              <View key={notification.id} style={styles.notificationContainer}>
+                <View style={styles.successContainer}> 
+                  <SuccessIcon size={40} />
+                  <View style={styles.successTextContainer}>
+                    <Text style={styles.successText}>{notification.title}</Text>
+                    <View style={styles.dateContainer}>
+                      <Text style={styles.dateText}>{notification.date}</Text>
+                      <DotIcon size={3} />
+                      <Text style={styles.dateText}>{notification.time}</Text>
+                    </View>
+                  </View>
+                  {notification.isNew && (
+                    <Text style={styles.newText}>New</Text>
+                  )}
                 </View>
+                <Text style={styles.successDescription}>{notification.description}</Text>
               </View>
-              <Text style={styles.newText}>{t('notification.new')}</Text>
-            </View>
-            <Text style={styles.successDescription}>{t('notification.newFeature.description')}</Text>
-          </View>
-
-          <View style={styles.notificationContainer}>
-            <View style={styles.successContainer}> 
-              <SuccessIcon size={40} />
-              <View style={styles.successTextContainer}>
-                <Text style={styles.successText}>{t('notification.maintenance.title')}</Text>
-                <View style={styles.dateContainer}>
-                  <Text style={styles.dateText}>{t('notification.yesterday')}</Text>
-                  <DotIcon size={3} />
-                  <Text style={styles.dateText}>02:15 PM</Text>
-                </View>
-              </View>
-            </View>
-            <Text style={styles.successDescription}>{t('notification.maintenance.description')}</Text>
-          </View>
-
+            ))
+          )}
         </View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -224,5 +249,18 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: COLORS.textSecondary,
   },
-
+  loadingText: {
+    fontFamily: 'nunito-medium',
+    fontSize: 16,
+    color: COLORS.text,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  noNotificationsText: {
+    fontFamily: 'nunito-medium',
+    fontSize: 16,
+    color: COLORS.text,
+    textAlign: 'center',
+    marginTop: 20,
+  },
 });
