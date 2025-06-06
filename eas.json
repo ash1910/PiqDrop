@@ -18,14 +18,16 @@
       },
       "production": {
         "env": {
-          "ANDROID_SDK_ROOT": "/Volumes/ExAsh/Library/Android/sdk"
+          "APPLE_TEAM_ID": "Y7V7F3HVRJ",
+          "ANDROID_SDK_ROOT": "/Volumes/ExAsh/Library/Android/sdk",
+          "IOS_BUNDLE_ID": "com.piqdrop.com"
         }
       }
     },
     "submit": {
       "production": {
         "ios": {
-          "ascAppId": "6745814831"
+          "ascAppId": "6746941178"
         }
       }
     } 

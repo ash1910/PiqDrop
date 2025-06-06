@@ -3,8 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  // Replace this URL with your Laravel API URL (e.g., 'http://your-domain.com/api' or 'http://localhost:8000/api')
-  baseURL: 'https://piqdrop.equation.wmd-hosting.com/api', //'https://piqdrop.local:8890/api',
+  baseURL: 'https://piqdrop.com/api', //'https://piqdrop.equation.wmd-hosting.com/api', //'https://piqdrop.local:8890/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
